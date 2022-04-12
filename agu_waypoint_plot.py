@@ -16,7 +16,7 @@ def main():
     try:
         client = carla.Client("localhost", 2000)
         client.set_timeout(10)
-        world = client.load_world('Town02')
+        world = client.load_world('Town01')
         map = world.get_map()
         waypoints = map.generate_waypoints(1.0)
         for w in waypoints:
