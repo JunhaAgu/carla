@@ -6,7 +6,7 @@
 # This work is licensed under the terms of the MIT license.
 # For a copy, see <https://opensource.org/licenses/MIT>.
 
-"""Example of automatic vehicle control from client side."""
+"""Agu automatic vehicle control from client side."""
 
 from __future__ import print_function
 
@@ -61,6 +61,9 @@ from carla import ColorConverter as cc
 from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
 from agents.navigation.basic_agent import BasicAgent  # pylint: disable=import-error
 
+import generate_npc as gen
+from agents.navigation.controller import VehiclePIDController
+
 # ==============================================================================
 # -- Global parameters ---------------------------------------------------------
 # ==============================================================================
@@ -68,7 +71,23 @@ global_map_id = 1
 
 if global_map_id==1:
     agent_start_point = carla.Transform(carla.Location(x=190.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
-    agent_end_point = carla.Location(x=120.0,y=55.6, z=0.3)
+    agent_waypoint = np.array([
+     (carla.Location(x=120.0, y=55.5,  z=0.3)), #첫번째 교차로 전 
+     (carla.Location(x=88.4,  y=88.3,  z=0.3)), #좌회전 후 
+     (carla.Location(x=230.0, y=133.5, z=0.3)), #좌회전 후 
+     (carla.Location(x=338.8, y=88.3,  z=0.3)), #긴 직진 후 좌회전
+     (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
+     (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
+     ])
+    npc_vehicle1_start_point = carla.Transform(carla.Location(x=120.0,y=59.8,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
+    npc_vehicle1_waypoint = np.array([
+     (carla.Location(x=190.0, y=59.8,  z=0.3))
+    #  (carla.Location(x=88.4,  y=88.3,  z=0.3)), #좌회전 후 
+    #  (carla.Location(x=230.0, y=133.5, z=0.3)), #좌회전 후 
+    #  (carla.Location(x=338.8, y=88.3,  z=0.3)), #긴 직진 후 좌회전
+    #  (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
+    #  (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
+     ])
 # elif global_map_id == 2:
 #     agent_start_point = carla.Transform(carla.Location(x=168.7,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
 # elif global_map_id == 3:
@@ -136,7 +155,9 @@ class World(object):
         cam_pos_id = self.camera_manager.transform_index if self.camera_manager is not None else 0
 
         # Get a random blueprint.
-        blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))
+        # blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))
+        blueprint = self.world.get_blueprint_library().filter('vehicle.audi.tt')[0]
+        # https://carla.readthedocs.io/en/latest/bp_library/
         blueprint.set_attribute('role_name', 'hero')
         if blueprint.has_attribute('color'):
             color = random.choice(blueprint.get_attribute('color').recommended_values)
@@ -692,6 +713,7 @@ class CameraManager(object):
 # -- Game Loop ---------------------------------------------------------
 # ==============================================================================
 
+vehicles_list = []
 
 def game_loop(args):
     """
@@ -713,7 +735,7 @@ def game_loop(args):
         traffic_manager = client.get_trafficmanager()
         # sim_world = client.get_world()
         sim_world = client.load_world("Town01")
-
+                  
         if args.sync:
             settings = sim_world.get_settings()
             settings.synchronous_mode = True
@@ -722,6 +744,8 @@ def game_loop(args):
 
             traffic_manager.set_synchronous_mode(True)
 
+        
+        
         display = pygame.display.set_mode(
             (args.width, args.height),
             pygame.HWSURFACE | pygame.DOUBLEBUF)
@@ -735,14 +759,34 @@ def game_loop(args):
             agent = BehaviorAgent(world.player, behavior=args.behavior)
 
         # Set the agent destination
+        agent.set_destination(agent_waypoint[0])
+        print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+              %(agent_waypoint[0].x, agent_waypoint[0].y, agent_waypoint[0].z) )
+        
+        # generate_npc  
+        v1 = gen.spawn_npc(client, vehicles_list, 'firetruck', npc_vehicle1_start_point)
+        # while len(vehicles_list)==1:
+        #     print('stop')
+        v1_agent = BehaviorAgent(v1, behavior=args.behavior)
+        v1_agent.set_destination(npc_vehicle1_waypoint[0])
+        # v1_agent.set_Autopilot
+        
         # spawn_points = world.map.get_spawn_points()
         # destination = random.choice(spawn_points).location
         # agent.set_destination(destination)
+        
+        # Weather
+        sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
+        # ClearNoon, CloudyNoon, WetNoon, WetCloudyNoon, SoftRainNoon, MidRainyNoon, HardRainNoon, 
+        # ClearSunset, CloudySunset, WetSunset, WetCloudySunset, SoftRainSunset, MidRainSunset, HardRainSunset.
                
-        agent.set_destination(agent_end_point)
-
         clock = pygame.time.Clock()
 
+        cnt_waypoint = 0;
+        
+        # map = sim_world.get_map()
+        # control_vehicle = VehiclePIDController(v1, args_lateral={'K_P':1.0, 'K_D':0.0, 'K_I':0.0}, args_longitudinal={'K_P':1.0, 'K_D':0.0, 'K_I':0.0})
+        
         while True:
             clock.tick()
             if args.sync:
@@ -756,12 +800,52 @@ def game_loop(args):
             world.render(display)
             pygame.display.flip()
 
+            
+            # current_agent_location = world.player.get_location()
+            # waypoint_error = np.sqrt((current_agent_location.x-agent_waypoint[cnt_waypoint].x)**2 + 
+            #                                  (current_agent_location.y-agent_waypoint[cnt_waypoint].y)**2)
+            # print(waypoint_error)
+            # if waypoint_error < 2.0:
+            #     cnt_waypoint += 1
+            
+            # v1_waypoints = map.get_waypoint(v1.get_location())
+            # v1_waypoints = np.random.choice(v1_waypoints.next(0.3)) #waypoints ???? waypoint??
+            # control_signal = control_vehicle.run_step(30, v1_waypoints)
+            # v1.apply_control(control_signal)
+            
+            v1_control = v1_agent.run_step()
+            v1_control.manual_gear_shift = False
+            v1.apply_control(v1_control)
+            world.world.wait_for_tick()
+            
+            # v1.set_autopilot(True)
+
+            if agent.done():
+                cnt_waypoint += 1
+                agent.set_destination(agent_waypoint[cnt_waypoint])
+                print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+                    %(agent_waypoint[cnt_waypoint].x, agent_waypoint[cnt_waypoint].y, agent_waypoint[cnt_waypoint].z) )
+            
             if agent.done():
                 if args.loop:
                     # agent.set_destination(random.choice(spawn_points).location)
+                    # current_agent_location = agent.get_location()
+                    
+                    # print(current_agent_location)
+                    # waypoint_error = np.sqrt((current_agent_location.x-agent_waypoint[cnt_waypoint].x)**2 + 
+                    #                          (current_agent_location.y-agent_waypoint[cnt_waypoint].y)**2)
+                    # print(waypoint_error)
+                    # if waypoint_error < 2.0:
+                    #     cnt_waypoint += 1
+                    
+                    # world.get_map.get_waypoint(agent.get_location())
+                    # waypoints = np.random.choice(waypoints.next(0.3))
+                    
+                    # agent.set_destination(waypoint_error[cnt_waypoint])
+                    
                     # agent.set_destination(agent_end_point)
                     world.hud.notification("The target has been reached, searching for another target", seconds=4.0)
-                    print("The target has been reached, searching for another target")
+                    print("The target has been reached, searching forW another target")
                 else:
                     print("The target has been reached, stopping the simulation")
                     break
