@@ -79,14 +79,21 @@ if global_map_id==1:
      (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
      (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
      ])
-    npc_vehicle1_start_point = carla.Transform(carla.Location(x=120.0,y=59.8,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
-    npc_vehicle1_waypoint = np.array([
-     (carla.Location(x=190.0, y=59.8,  z=0.3))
-    #  (carla.Location(x=88.4,  y=88.3,  z=0.3)), #좌회전 후 
-    #  (carla.Location(x=230.0, y=133.5, z=0.3)), #좌회전 후 
-    #  (carla.Location(x=338.8, y=88.3,  z=0.3)), #긴 직진 후 좌회전
-    #  (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
-    #  (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
+    v1_start_point = carla.Transform(carla.Location(x=92.3,y=107.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    v1_waypoint = np.array([
+     (carla.Location(x=92.1, y=26.4,  z=0.3))
+     ])
+    v2_start_point = carla.Transform(carla.Location(x=120.0,y=55.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    v2_waypoint = np.array([
+    (carla.Location(x=92.1, y=26.4,  z=0.3))
+     ])
+    v3_start_point = carla.Transform(carla.Location(x=92.3,y=150.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    v3_waypoint = np.array([
+    (carla.Location(x=190.0, y=58.5,  z=0.3))
+     ])
+    v4_start_point = carla.Transform(carla.Location(x=170.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    v4_waypoint = np.array([
+    (carla.Location(x=158.1, y=33.7,  z=0.3))
      ])
 # elif global_map_id == 2:
 #     agent_start_point = carla.Transform(carla.Location(x=168.7,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
@@ -136,6 +143,11 @@ class World(object):
             sys.exit(1)
         self.hud = hud
         self.player = None
+        self.v1_agent = None
+        self.v2_agent = None
+        self.v3_agent = None
+        self.v4_agent = None
+        
         self.collision_sensor = None
         self.lane_invasion_sensor = None
         self.gnss_sensor = None
@@ -147,6 +159,27 @@ class World(object):
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
         self.recording_start = 0
+        
+    def spawn_vehicle(self, vehicle_model, self_vehicle, start_point):
+        blueprint = self.world.get_blueprint_library().filter(vehicle_model)[0]
+        if self_vehicle is not None:
+            spawn_point = self_vehicle.get_transform()
+            spawn_point.location.z += 2.0
+            spawn_point.rotation.roll = 0.0
+            spawn_point.rotation.pitch = 0.0
+            self.destroy()
+            self_vehicle = self.world.try_spawn_actor(blueprint, spawn_point)
+            self.modify_vehicle_physics(self_vehicle)
+        while self_vehicle is None:
+            if not self.map.get_spawn_points():
+                print('There are no spawn points available in your map/town.')
+                print('Please add some Vehicle Spawn Point to your UE4 scene.')
+                sys.exit(1)
+            spawn_point = start_point;
+            self_vehicle = self.world.try_spawn_actor(blueprint, spawn_point)
+            self.modify_vehicle_physics(self_vehicle)
+            return self_vehicle
+        
 
     def restart(self, args):
         """Restart the world"""
@@ -182,7 +215,13 @@ class World(object):
             spawn_point = agent_start_point;
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.modify_vehicle_physics(self.player)
-
+            
+        # Spawn the vehicles
+        self.v1_agent = self.spawn_vehicle('firetruck', self.v1_agent, v1_start_point)
+        self.v2_agent = self.spawn_vehicle('ambulance', self.v2_agent, v2_start_point)
+        self.v3_agent = self.spawn_vehicle('cybertruck', self.v3_agent, v3_start_point)
+        self.v4_agent = self.spawn_vehicle('sprinter', self.v4_agent, v4_start_point)
+       
         if self._args.sync:
             self.world.tick()
         else:
@@ -237,7 +276,11 @@ class World(object):
             self.collision_sensor.sensor,
             self.lane_invasion_sensor.sensor,
             self.gnss_sensor.sensor,
-            self.player]
+            self.player,
+            self.v1_agent,
+            self.v2_agent,
+            self.v3_agent,
+            self.v4_agent]
         for actor in actors:
             if actor is not None:
                 actor.destroy()
@@ -743,8 +786,6 @@ def game_loop(args):
             sim_world.apply_settings(settings)
 
             traffic_manager.set_synchronous_mode(True)
-
-        
         
         display = pygame.display.set_mode(
             (args.width, args.height),
@@ -764,16 +805,18 @@ def game_loop(args):
               %(agent_waypoint[0].x, agent_waypoint[0].y, agent_waypoint[0].z) )
         
         # generate_npc  
-        v1 = gen.spawn_npc(client, vehicles_list, 'firetruck', npc_vehicle1_start_point)
-        # while len(vehicles_list)==1:
-        #     print('stop')
-        v1_agent = BehaviorAgent(v1, behavior=args.behavior)
-        v1_agent.set_destination(npc_vehicle1_waypoint[0])
-        # v1_agent.set_Autopilot
+        # v1_agent = gen.spawn_npc(client, vehicles_list, 'firetruck', v1_start_point)
+        v1_agent = BehaviorAgent(world.v1_agent, behavior=args.behavior)
+        v1_agent.set_destination(v1_waypoint[0])
         
-        # spawn_points = world.map.get_spawn_points()
-        # destination = random.choice(spawn_points).location
-        # agent.set_destination(destination)
+        v2_agent = BehaviorAgent(world.v2_agent, behavior=args.behavior)
+        v2_agent.set_destination(v2_waypoint[0])
+        
+        v3_agent = BehaviorAgent(world.v3_agent, behavior=args.behavior)
+        v3_agent.set_destination(v3_waypoint[0])
+        
+        v4_agent = BehaviorAgent(world.v4_agent, behavior=args.behavior)
+        v4_agent.set_destination(v4_waypoint[0])
         
         # Weather
         sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
@@ -783,9 +826,16 @@ def game_loop(args):
         clock = pygame.time.Clock()
 
         cnt_waypoint = 0;
+        cnt_waypoint_v1 = 0;
+        cnt_waypoint_v2 = 0;
+        cnt_waypoint_v3 = 0;
+        cnt_waypoint_v4 = 0;
         
-        # map = sim_world.get_map()
-        # control_vehicle = VehiclePIDController(v1, args_lateral={'K_P':1.0, 'K_D':0.0, 'K_I':0.0}, args_longitudinal={'K_P':1.0, 'K_D':0.0, 'K_I':0.0})
+        v1_spawn_points = world.map.get_spawn_points()
+        v2_spawn_points = world.map.get_spawn_points()
+        v3_spawn_points = world.map.get_spawn_points()
+        v4_spawn_points = world.map.get_spawn_points()
+
         
         while True:
             clock.tick()
@@ -799,51 +849,53 @@ def game_loop(args):
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
-
             
-            # current_agent_location = world.player.get_location()
-            # waypoint_error = np.sqrt((current_agent_location.x-agent_waypoint[cnt_waypoint].x)**2 + 
-            #                                  (current_agent_location.y-agent_waypoint[cnt_waypoint].y)**2)
-            # print(waypoint_error)
-            # if waypoint_error < 2.0:
-            #     cnt_waypoint += 1
+            if v1_agent.done():
+                cnt_waypoint_v1 += 1
+                if cnt_waypoint_v1 > len(v1_waypoint)-1:
+                    v1_agent.set_destination(random.choice(v1_spawn_points).location)
+                else:
+                    agent.set_destination(v1_waypoint[cnt_waypoint_v1])
+                    print('v1_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+                            %(v1_waypoint[cnt_waypoint_v1].x, v1_waypoint[cnt_waypoint_v1].y, v1_waypoint[cnt_waypoint_v1].z) )
             
-            # v1_waypoints = map.get_waypoint(v1.get_location())
-            # v1_waypoints = np.random.choice(v1_waypoints.next(0.3)) #waypoints ???? waypoint??
-            # control_signal = control_vehicle.run_step(30, v1_waypoints)
-            # v1.apply_control(control_signal)
-            
-            v1_control = v1_agent.run_step()
-            v1_control.manual_gear_shift = False
-            v1.apply_control(v1_control)
-            world.world.wait_for_tick()
-            
-            # v1.set_autopilot(True)
+            if v2_agent.done():
+                cnt_waypoint_v2 += 1
+                if cnt_waypoint_v2 > len(v2_waypoint)-1:
+                    v2_agent.set_destination(random.choice(v2_spawn_points).location)
+                else:
+                    agent.set_destination(v2_waypoint[cnt_waypoint_v2])
+                    print('v2_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+                            %(v2_waypoint[cnt_waypoint_v2].x, v2_waypoint[cnt_waypoint_v2].y, v2_waypoint[cnt_waypoint_v2].z) )
+                    
+            if v3_agent.done():
+                cnt_waypoint_v3 += 1
+                if cnt_waypoint_v3 > len(v3_waypoint)-1:
+                    v3_agent.set_destination(random.choice(v3_spawn_points).location)
+                else:
+                    agent.set_destination(v3_waypoint[cnt_waypoint_v3])
+                    print('v3_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+                            %(v3_waypoint[cnt_waypoint_v3].x, v3_waypoint[cnt_waypoint_v3].y, v3_waypoint[cnt_waypoint_v3].z) )
+                    
+            if v4_agent.done():
+                cnt_waypoint_v4 += 1
+                if cnt_waypoint_v4 > len(v4_waypoint)-1:
+                    v4_agent.set_destination(random.choice(v4_spawn_points).location)
+                else:
+                    agent.set_destination(v4_waypoint[cnt_waypoint_v4])
+                    print('v4_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+                            %(v4_waypoint[cnt_waypoint_v4].x, v4_waypoint[cnt_waypoint_v4].y, v4_waypoint[cnt_waypoint_v4].z) ) 
 
             if agent.done():
                 cnt_waypoint += 1
                 agent.set_destination(agent_waypoint[cnt_waypoint])
                 print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                     %(agent_waypoint[cnt_waypoint].x, agent_waypoint[cnt_waypoint].y, agent_waypoint[cnt_waypoint].z) )
+                
+               
             
             if agent.done():
                 if args.loop:
-                    # agent.set_destination(random.choice(spawn_points).location)
-                    # current_agent_location = agent.get_location()
-                    
-                    # print(current_agent_location)
-                    # waypoint_error = np.sqrt((current_agent_location.x-agent_waypoint[cnt_waypoint].x)**2 + 
-                    #                          (current_agent_location.y-agent_waypoint[cnt_waypoint].y)**2)
-                    # print(waypoint_error)
-                    # if waypoint_error < 2.0:
-                    #     cnt_waypoint += 1
-                    
-                    # world.get_map.get_waypoint(agent.get_location())
-                    # waypoints = np.random.choice(waypoints.next(0.3))
-                    
-                    # agent.set_destination(waypoint_error[cnt_waypoint])
-                    
-                    # agent.set_destination(agent_end_point)
                     world.hud.notification("The target has been reached, searching for another target", seconds=4.0)
                     print("The target has been reached, searching forW another target")
                 else:
@@ -853,6 +905,22 @@ def game_loop(args):
             control = agent.run_step()
             control.manual_gear_shift = False
             world.player.apply_control(control)
+            
+            v1_control = v1_agent.run_step()
+            v1_control.manual_gear_shift = False
+            world.v1_agent.apply_control(v1_control)
+            
+            v2_control = v2_agent.run_step()
+            v2_control.manual_gear_shift = False
+            world.v2_agent.apply_control(v2_control)
+            
+            v3_control = v3_agent.run_step()
+            v3_control.manual_gear_shift = False
+            world.v3_agent.apply_control(v3_control)
+            
+            v4_control = v4_agent.run_step()
+            v4_control.manual_gear_shift = False
+            world.v4_agent.apply_control(v4_control)
 
     finally:
 
