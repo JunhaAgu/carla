@@ -143,10 +143,11 @@ class World(object):
             sys.exit(1)
         self.hud = hud
         self.player = None
-        self.v1_agent = None
-        self.v2_agent = None
-        self.v3_agent = None
-        self.v4_agent = None
+        self.npc_v1 = None
+        self.npc_v2 = None
+        self.npc_v3 = None
+        self.npc_v4 = None
+        self.npc_vehicles = []
         
         self.collision_sensor = None
         self.lane_invasion_sensor = None
@@ -217,10 +218,16 @@ class World(object):
             self.modify_vehicle_physics(self.player)
             
         # Spawn the vehicles
-        self.v1_agent = self.spawn_vehicle('firetruck', self.v1_agent, v1_start_point)
-        self.v2_agent = self.spawn_vehicle('ambulance', self.v2_agent, v2_start_point)
-        self.v3_agent = self.spawn_vehicle('cybertruck', self.v3_agent, v3_start_point)
-        self.v4_agent = self.spawn_vehicle('sprinter', self.v4_agent, v4_start_point)
+        self.npc_v1 = self.spawn_vehicle('firetruck',  self.npc_v1, v1_start_point)
+        self.npc_v2 = self.spawn_vehicle('ambulance',  self.npc_v2, v2_start_point)
+        self.npc_v3 = self.spawn_vehicle('cybertruck', self.npc_v3, v3_start_point)
+        self.npc_v4 = self.spawn_vehicle('sprinter',   self.npc_v4, v4_start_point)
+        
+        self.npc_vehicles.append(self.npc_v1)
+        self.npc_vehicles.append(self.npc_v2)
+        self.npc_vehicles.append(self.npc_v3)
+        self.npc_vehicles.append(self.npc_v4)
+        # print(len(self.npc_vehicles))
        
         if self._args.sync:
             self.world.tick()
@@ -277,10 +284,12 @@ class World(object):
             self.lane_invasion_sensor.sensor,
             self.gnss_sensor.sensor,
             self.player,
-            self.v1_agent,
-            self.v2_agent,
-            self.v3_agent,
-            self.v4_agent]
+            self.npc_v1,
+            self.npc_v2,
+            self.npc_v3,
+            self.npc_v4,
+            self.npc_vehicles
+            ]
         for actor in actors:
             if actor is not None:
                 actor.destroy()
@@ -756,7 +765,9 @@ class CameraManager(object):
 # -- Game Loop ---------------------------------------------------------
 # ==============================================================================
 
+
 vehicles_list = []
+v_agent = []
 
 def game_loop(args):
     """
@@ -806,17 +817,22 @@ def game_loop(args):
         
         # generate_npc  
         # v1_agent = gen.spawn_npc(client, vehicles_list, 'firetruck', v1_start_point)
-        v1_agent = BehaviorAgent(world.v1_agent, behavior=args.behavior)
+        v1_agent = BehaviorAgent(world.npc_v1, behavior=args.behavior)
         v1_agent.set_destination(v1_waypoint[0])
         
-        v2_agent = BehaviorAgent(world.v2_agent, behavior=args.behavior)
+        v2_agent = BehaviorAgent(world.npc_v2, behavior=args.behavior)
         v2_agent.set_destination(v2_waypoint[0])
         
-        v3_agent = BehaviorAgent(world.v3_agent, behavior=args.behavior)
+        v3_agent = BehaviorAgent(world.npc_v3, behavior=args.behavior)
         v3_agent.set_destination(v3_waypoint[0])
         
-        v4_agent = BehaviorAgent(world.v4_agent, behavior=args.behavior)
+        v4_agent = BehaviorAgent(world.npc_v4, behavior=args.behavior)
         v4_agent.set_destination(v4_waypoint[0])
+        
+        # for i in range(1,len(world.npc_vehicles)):
+        #     v_agent = BehaviorAgent(world.npc_vehicles[i], behavior=args.behavior)
+        #     v_agent.
+        #     v_agent.append()
         
         # Weather
         sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
@@ -908,19 +924,19 @@ def game_loop(args):
             
             v1_control = v1_agent.run_step()
             v1_control.manual_gear_shift = False
-            world.v1_agent.apply_control(v1_control)
+            world.npc_v1.apply_control(v1_control)
             
             v2_control = v2_agent.run_step()
             v2_control.manual_gear_shift = False
-            world.v2_agent.apply_control(v2_control)
+            world.npc_v2.apply_control(v2_control)
             
             v3_control = v3_agent.run_step()
             v3_control.manual_gear_shift = False
-            world.v3_agent.apply_control(v3_control)
+            world.npc_v3.apply_control(v3_control)
             
             v4_control = v4_agent.run_step()
             v4_control.manual_gear_shift = False
-            world.v4_agent.apply_control(v4_control)
+            world.npc_v4.apply_control(v4_control)
 
     finally:
 
