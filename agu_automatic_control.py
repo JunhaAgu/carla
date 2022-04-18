@@ -70,7 +70,10 @@ from agents.navigation.controller import VehiclePIDController
 global_map_id = 1
 
 v_start_point = []
-v_waypoint = []  
+v_waypoint = []
+
+w_start_point = []
+w_waypoint = []
 
 if global_map_id==1:
     agent_start_point = carla.Transform(carla.Location(x=190.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
@@ -82,18 +85,22 @@ if global_map_id==1:
      (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
      (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
      ])
+    #firetruck
     v1_start_point = carla.Transform(carla.Location(x=92.3,y=107.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
     v1_waypoint = np.array([
      (carla.Location(x=92.1, y=26.4,  z=0.3))
      ])
+    #ambulance
     v2_start_point = carla.Transform(carla.Location(x=120.0,y=55.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
     v2_waypoint = np.array([
     (carla.Location(x=92.1, y=26.4,  z=0.3))
      ])
+    #cybertruck
     v3_start_point = carla.Transform(carla.Location(x=92.3,y=150.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
     v3_waypoint = np.array([
     (carla.Location(x=190.0, y=58.5,  z=0.3))
      ])
+    #sprinter
     v4_start_point = carla.Transform(carla.Location(x=170.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
     v4_waypoint = np.array([
     (carla.Location(x=158.1, y=33.7,  z=0.3))
@@ -106,6 +113,21 @@ if global_map_id==1:
     v_waypoint.append(v2_waypoint)
     v_waypoint.append(v3_waypoint)
     v_waypoint.append(v4_waypoint)
+    
+    w1_start_point = carla.Transform(carla.Location(x=110.0,y=61.0,z=2), carla.Rotation(pitch = 0, yaw=-180, roll=0))
+    w1_waypoint = np.array([
+    w1_start_point.location
+    # (carla.Location(x=130.0, y=61.0,  z=0.3))
+     ])
+    w2_start_point = carla.Transform(carla.Location(x=130.0,y=51.0,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    w2_waypoint = np.array([
+    w2_start_point.location
+    # (carla.Location(x=120.0, y=51.0,  z=0.3))
+     ])
+    w_start_point.append(w1_start_point)
+    w_start_point.append(w2_start_point)
+    w_waypoint.append(w1_waypoint)
+    w_waypoint.append(w2_waypoint)
     
     
 # elif global_map_id == 2:
@@ -143,10 +165,11 @@ def get_actor_display_name(actor, truncate=250):
 class World(object):
     """ Class representing the surrounding environment """
 
-    def __init__(self, carla_world, hud, args):
+    def __init__(self, client, hud, args):
         """Constructor method"""
+        self._client = client
         self._args = args
-        self.world = carla_world
+        self.world = client.get_world()
         try:
             self.map = self.world.get_map()
         except RuntimeError as error:
@@ -160,10 +183,17 @@ class World(object):
         self.npc_v2 = None
         self.npc_v3 = None
         self.npc_v4 = None
-        self.npc_vehicles = []
+        self.npc_v = []
+        
+        self.npc_w1 = None
+        self.npc_w2 = None
+        self.npc_w = []
         
         self.v_agent = []
         self.v_control = []
+        
+        self.p_agent = []
+        self.w_speed = []
         
         self.collision_sensor = None
         self.lane_invasion_sensor = None
@@ -197,9 +227,43 @@ class World(object):
             self.modify_vehicle_physics(self_vehicle)
             return self_vehicle
         
+    def spawn_pedestrian(self, p_type, self_pedestrian, start_point):
+        walkers_list = []
+        while self_pedestrian is None:
+            blueprint_pedestrian = self.world.get_blueprint_library().filter('walker.pedestrian.*')
+            pedestrian_bp = random.choice(blueprint_pedestrian)
+            
+            # set as not invincible
+            if pedestrian_bp.has_attribute('is_invincible'):
+                pedestrian_bp.set_attribute('is_invincible', 'false')
+
+            # set the max speed
+            if pedestrian_bp.has_attribute('speed'):
+                if (p_type == 'run'):
+                    # running
+                    self.w_speed.append(pedestrian_bp.get_attribute('speed').recommended_values[2])
+                else:
+                    # walking
+                    self.w_speed.append(pedestrian_bp.get_attribute('speed').recommended_values[1])
+            else:
+                    print("Walker has no speed")
+                    self.w_speed.append(0.0)
+            spawn_point = start_point;
+            self_pedestrian = self.world.try_spawn_actor(pedestrian_bp, spawn_point)
+            # print(self_pedestrian.id)
+            
+            # 3. we spawn the walker controller
+            # walker_controller_bp = self.world.get_blueprint_library().find('controller.ai.walker')
+            # self_pedestrian_control = self.world.try_spawn_actor(walker_controller_bp, carla.Transform(), self_pedestrian.id)
+            return self_pedestrian
+
+    
 
     def restart(self, args):
         """Restart the world"""
+        # @todo cannot import these directly.
+        SpawnActor = carla.command.SpawnActor
+        
         # Keep same camera config if the camera manager exists.
         cam_index = self.camera_manager.index if self.camera_manager is not None else 0
         cam_pos_id = self.camera_manager.transform_index if self.camera_manager is not None else 0
@@ -239,12 +303,67 @@ class World(object):
         self.npc_v3 = self.spawn_vehicle('cybertruck', self.npc_v3, v3_start_point)
         self.npc_v4 = self.spawn_vehicle('sprinter',   self.npc_v4, v4_start_point)
         
-        self.npc_vehicles.append(self.npc_v1)
-        self.npc_vehicles.append(self.npc_v2)
-        self.npc_vehicles.append(self.npc_v3)
-        self.npc_vehicles.append(self.npc_v4)
-        # print(len(self.npc_vehicles))
+        self.npc_v.append(self.npc_v1)
+        self.npc_v.append(self.npc_v2)
+        self.npc_v.append(self.npc_v3)
+        self.npc_v.append(self.npc_v4)
+        # print(len(self.npc_v))
+        
+        # Spawn the pedestrians
+        self.npc_w1 = self.spawn_pedestrian('run', self.npc_w1, w1_start_point)
+        self.npc_w2 = self.spawn_pedestrian('run', self.npc_w2, w2_start_point)
+        
+        self.npc_w.append(self.npc_w1)
+        self.npc_w.append(self.npc_w2)
+        
+        all_walkers_id = []
+        walkers_list = []
+        walker_speed2 = []
+        percentagePedestriansCrossing = 0.0
+        for i in range(len(self.npc_w)):
+            walkers_list.append({"id": self.npc_w[i].id})
+            walker_speed2.append(self.w_speed[i])
+        walker_speed = walker_speed2
+        
+        # 3. we spawn the walker controller
+        batch = []
+        walker_controller_bp = self.world.get_blueprint_library().find('controller.ai.walker')
+        for i in range(len(walkers_list)):
+                batch.append(SpawnActor(walker_controller_bp, carla.Transform(), walkers_list[i]["id"]))
+        results = self._client.apply_batch_sync(batch, True)
+        for i in range(len(results)):
+            if results[i].error:
+                logging.error(results[i].error)
+            else:
+                walkers_list[i]["con"] = results[i].actor_id
+        # 4. we put altogether the walkers and controllers id to get the objects from their id
+        for i in range(len(walkers_list)):
+                all_walkers_id.append(walkers_list[i]["con"])
+                all_walkers_id.append(walkers_list[i]["id"])
+        all_actors = self.world.get_actors(all_walkers_id)
+        
+        # wait for a tick to ensure client receives the last transform of the walkers we have just created
+        self.world.tick()
+
+        # 5. initialize each controller and set target to walk to (list is [controler, actor, controller, actor ...])
+        # set how many pedestrians can cross the road
+        self.world.set_pedestrians_cross_factor(percentagePedestriansCrossing)
+        
+        for i in range(0, len(all_walkers_id), 2):
+                # start walker
+                all_actors[i].start()
+                # set walk to random point
+                # all_actors[i].go_to_location(w_waypoint[int(i/2)-1][0])
+                all_actors[i].go_to_location(self.world.get_random_location_from_navigation())
+                # max speed
+                all_actors[i].set_max_speed(float(walker_speed[int(i/2)]))
+
+        print('Spawned %d vehicles and %d walkers' % (len(vehicles_list), len(walkers_list)))
+
+        # example of how to use parameters
+        # self._client.get_trafficmanager().global_percentage_speed_difference(30.0)
        
+        
         if self._args.sync:
             self.world.tick()
         else:
@@ -304,9 +423,9 @@ class World(object):
             self.npc_v2,
             self.npc_v3,
             self.npc_v4,
-            self.npc_vehicles,
-            self.v_agent,
-            self.v_control
+            # self.npc_v,
+            # self.v_agent,
+            # self.v_control
             ]
         for actor in actors:
             if actor is not None:
@@ -820,7 +939,7 @@ def game_loop(args):
             pygame.HWSURFACE | pygame.DOUBLEBUF)
 
         hud = HUD(args.width, args.height)
-        world = World(client.get_world(), hud, args)
+        world = World(client, hud, args)
         controller = KeyboardControl(world)
         if args.agent == "Basic":
             agent = BasicAgent(world.player)
@@ -846,10 +965,23 @@ def game_loop(args):
         # v4_agent = BehaviorAgent(world.npc_v4, behavior=args.behavior)
         # v4_agent.set_destination(v4_waypoint[0])
         
-        for i in range(0,len(world.npc_vehicles)):
-            v_agent_temp = BehaviorAgent(world.npc_vehicles[i], behavior=args.behavior)
+        for i in range(0,len(world.npc_v)):
+            v_agent_temp = BehaviorAgent(world.npc_v[i], behavior=args.behavior)
             v_agent_temp.set_destination(v_waypoint[i][0])
             world.v_agent.append(v_agent_temp)
+            
+        # Set pedestrian
+        # results = client.apply_batch_sync(world.npc_w, True)
+        # walkers_list = []
+        # walker_speed2 = []
+        # for i in range(len(results)):
+        #         if results[i].error:
+        #                 logging.error(results[i].error)
+        #         else:
+        #                 walkers_list.append({"id": results[i].actor_id})
+        #                 walker_speed2.append(walker_speed[i])
+        # walker_speed = walker_speed2
+        
         
         # Weather
         sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
@@ -953,7 +1085,7 @@ def game_loop(args):
             for i in range(0,len(world.v_agent)):
                 world.v_control.insert(i, world.v_agent[i].run_step())
                 world.v_control[i].manual_gear_shift = False
-                world.npc_vehicles[i].apply_control(world.v_control[i])
+                world.npc_v[i].apply_control(world.v_control[i])
             
             # v1_control = v1_agent.run_step()
             # v1_control.manual_gear_shift = False
