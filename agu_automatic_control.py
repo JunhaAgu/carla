@@ -192,7 +192,6 @@ class World(object):
         self.v_agent = []
         self.v_control = []
         
-        self.p_agent = []
         self.w_speed = []
         
         self.collision_sensor = None
