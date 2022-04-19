@@ -29,21 +29,12 @@ except IndexError:
 from agents.navigation.behavior_agent import BehaviorAgent
 from agents.navigation.basic_agent import BasicAgent
 
-# def modify_vehicle_physics(self, actor):
-#         #If actor is not a vehicle, we cannot use the physics control
-#     try:
-#         physics_control = actor.get_physics_control()
-#         physics_control.use_sweep_wheel_collision = True
-#         actor.apply_physics_control(physics_control)
-#     except Exception:
-#         pass
-
 def main():
     start_record_full = time.time()
     
     map_number = 1;
     
-    fps_simu = 1000.0
+    fps_simu = 100.0
     time_stop = 2.0
     nbr_frame = 300 #max = 10000
     nbr_walkers = 50
@@ -74,7 +65,7 @@ def main():
         client.set_timeout(100.0)
         print("Map Town0" + str(map_number))
         world = client.load_world("Town0" + str(map_number))
-        folder_output = "../../../agu_results/%s/generated" %(world.get_map().name)
+        folder_output = "../../agu_results/%s/generated" %(world.get_map().name)
         print(folder_output)
         os.makedirs(folder_output) if not [os.path.exists(folder_output)] else [os.remove(f) for f in glob.glob(folder_output+"/*") if os.path.isfile(f)]
         # client.start_recorder(os.path.dirname(os.path.realpath(__file__))+"/"+folder_output+"/recording.log")
@@ -118,7 +109,7 @@ def main():
         print('Created %s' %KITTI)
         
         # Spawn vehicles and walkers
-        # gen.spawn_npc(client, nbr_vehicles, nbr_walkers, vehicles_list, all_walkers_id)
+        gen.spawn_npc(client, nbr_vehicles, nbr_walkers, vehicles_list, all_walkers_id)
         print("spawn_npc is generated") #agu
         
         # Wait for KITTI to stop
@@ -130,17 +121,15 @@ def main():
         # Launch KITTI
         # KITTI.set_autopilot(True)
             
-         
+        agent.set_destination(agent_waypoint[0])
+        print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
+              %(agent_waypoint[0].x, agent_waypoint[0].y, agent_waypoint[0].z) )    
             
         # Pass to the next simulator frame to spawn sensors and to retrieve first data
         world.tick()
         
         start_record = time.time()
         cnt_waypoint = 0
-        
-        agent.set_destination(agent_waypoint[0])
-        print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-              %(agent_waypoint[0].x, agent_waypoint[0].y, agent_waypoint[0].z) )  
         
         while True:
             world.tick()
@@ -157,17 +146,16 @@ def main():
             control = agent.run_step()
             control.manual_gear_shift = False
             KITTI.apply_control(control)
-            print(control)
             
             
-        # print('Destroying KITTI')
-        # client.apply_batch([carla.command.DestroyActor(x) for x in actor_list])
-        # actor_list.clear()
+        print('Destroying KITTI')
+        client.apply_batch([carla.command.DestroyActor(x) for x in actor_list])
+        actor_list.clear()
             
-        # print("Elapsed time : ", time.time()-start_record)
-        # print()
+        print("Elapsed time : ", time.time()-start_record)
+        print()
             
-        # time.sleep(2.0)
+        time.sleep(2.0)
             
         
     finally:

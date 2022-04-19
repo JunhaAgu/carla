@@ -61,13 +61,14 @@ from carla import ColorConverter as cc
 from agents.navigation.behavior_agent import BehaviorAgent  # pylint: disable=import-error
 from agents.navigation.basic_agent import BasicAgent  # pylint: disable=import-error
 
-import generate_npc as gen
-from agents.navigation.controller import VehiclePIDController
+import agu_generator_KITTI as gen
+import time
 
 # ==============================================================================
 # -- Global parameters ---------------------------------------------------------
 # ==============================================================================
 global_map_id = 1
+flag_spawn_walkers = False
 
 v_start_point = []
 v_waypoint = []
@@ -194,6 +195,8 @@ class World(object):
         
         self.w_speed = []
         
+        self.actor_list = []
+        
         self.collision_sensor = None
         self.lane_invasion_sensor = None
         self.gnss_sensor = None
@@ -205,6 +208,7 @@ class World(object):
         self.world.on_tick(hud.on_world_tick)
         self.recording_enabled = False
         self.recording_start = 0
+        
         
     def spawn_vehicle(self, vehicle_model, self_vehicle, start_point):
         blueprint = self.world.get_blueprint_library().filter(vehicle_model)[0]
@@ -225,95 +229,42 @@ class World(object):
             self_vehicle = self.world.try_spawn_actor(blueprint, spawn_point)
             self.modify_vehicle_physics(self_vehicle)
             return self_vehicle
+        self.actor_list.append(self_vehicle)
         
-    def spawn_pedestrian(self, p_type, self_pedestrian, start_point):
+    def spawn_walker(self, p_type, self_walker, start_point):
         walkers_list = []
-        while self_pedestrian is None:
-            blueprint_pedestrian = self.world.get_blueprint_library().filter('walker.pedestrian.*')
-            pedestrian_bp = random.choice(blueprint_pedestrian)
+        while self_walker is None:
+            blueprint_walker = self.world.get_blueprint_library().filter('walker.pedestrian.*')
+            walker_bp = random.choice(blueprint_walker)
             
             # set as not invincible
-            if pedestrian_bp.has_attribute('is_invincible'):
-                pedestrian_bp.set_attribute('is_invincible', 'false')
+            if walker_bp.has_attribute('is_invincible'):
+                walker_bp.set_attribute('is_invincible', 'false')
 
             # set the max speed
-            if pedestrian_bp.has_attribute('speed'):
+            if walker_bp.has_attribute('speed'):
                 if (p_type == 'run'):
                     # running
-                    self.w_speed.append(pedestrian_bp.get_attribute('speed').recommended_values[2])
+                    self.w_speed.append(walker_bp.get_attribute('speed').recommended_values[2])
                 else:
                     # walking
-                    self.w_speed.append(pedestrian_bp.get_attribute('speed').recommended_values[1])
+                    self.w_speed.append(walker_bp.get_attribute('speed').recommended_values[1])
             else:
                     print("Walker has no speed")
                     self.w_speed.append(0.0)
             spawn_point = start_point;
-            self_pedestrian = self.world.try_spawn_actor(pedestrian_bp, spawn_point)
-            # print(self_pedestrian.id)
-            
+            self_walker = self.world.try_spawn_actor(walker_bp, spawn_point)
+            # print(self_walker.id)
+        
             # 3. we spawn the walker controller
             # walker_controller_bp = self.world.get_blueprint_library().find('controller.ai.walker')
-            # self_pedestrian_control = self.world.try_spawn_actor(walker_controller_bp, carla.Transform(), self_pedestrian.id)
-            return self_pedestrian
-
-    
-
-    def restart(self, args):
-        """Restart the world"""
+            # self_pedestrian_control = self.world.try_spawn_actor(walker_controller_bp, carla.Transform(), self_walker.id)
+        self.actor_list.append(self_walker)
+        return self_walker
+        
+    def control_walkers(self):
         # @todo cannot import these directly.
         SpawnActor = carla.command.SpawnActor
-        
-        # Keep same camera config if the camera manager exists.
-        cam_index = self.camera_manager.index if self.camera_manager is not None else 0
-        cam_pos_id = self.camera_manager.transform_index if self.camera_manager is not None else 0
-
-        # Get a random blueprint.
-        # blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))
-        blueprint = self.world.get_blueprint_library().filter('vehicle.audi.tt')[0]
-        # https://carla.readthedocs.io/en/latest/bp_library/
-        blueprint.set_attribute('role_name', 'hero')
-        if blueprint.has_attribute('color'):
-            color = random.choice(blueprint.get_attribute('color').recommended_values)
-            blueprint.set_attribute('color', color)
-
-        # Spawn the player.
-        if self.player is not None:
-            spawn_point = self.player.get_transform()
-            spawn_point.location.z += 2.0
-            spawn_point.rotation.roll = 0.0
-            spawn_point.rotation.pitch = 0.0
-            self.destroy()
-            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
-            self.modify_vehicle_physics(self.player)
-        while self.player is None:
-            if not self.map.get_spawn_points():
-                print('There are no spawn points available in your map/town.')
-                print('Please add some Vehicle Spawn Point to your UE4 scene.')
-                sys.exit(1)
-            spawn_points = self.map.get_spawn_points()
-            # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            spawn_point = agent_start_point;
-            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
-            self.modify_vehicle_physics(self.player)
-            
-        # Spawn the vehicles
-        self.npc_v1 = self.spawn_vehicle('firetruck',  self.npc_v1, v1_start_point)
-        self.npc_v2 = self.spawn_vehicle('ambulance',  self.npc_v2, v2_start_point)
-        self.npc_v3 = self.spawn_vehicle('cybertruck', self.npc_v3, v3_start_point)
-        self.npc_v4 = self.spawn_vehicle('sprinter',   self.npc_v4, v4_start_point)
-        
-        self.npc_v.append(self.npc_v1)
-        self.npc_v.append(self.npc_v2)
-        self.npc_v.append(self.npc_v3)
-        self.npc_v.append(self.npc_v4)
-        # print(len(self.npc_v))
-        
-        # Spawn the pedestrians
-        self.npc_w1 = self.spawn_pedestrian('run', self.npc_w1, w1_start_point)
-        self.npc_w2 = self.spawn_pedestrian('run', self.npc_w2, w2_start_point)
-        
-        self.npc_w.append(self.npc_w1)
-        self.npc_w.append(self.npc_w2)
         
         all_walkers_id = []
         walkers_list = []
@@ -358,6 +309,69 @@ class World(object):
                 all_actors[i].set_max_speed(float(walker_speed[int(i/2)]))
 
         print('Spawned %d vehicles and %d walkers' % (len(vehicles_list), len(walkers_list)))
+
+    
+
+    def restart(self, args):
+        """Restart the world"""
+        # @todo cannot import these directly.
+        # SpawnActor = carla.command.SpawnActor
+        
+        # Keep same camera config if the camera manager exists.
+        cam_index = self.camera_manager.index if self.camera_manager is not None else 0
+        cam_pos_id = self.camera_manager.transform_index if self.camera_manager is not None else 0
+
+        # Get a random blueprint.
+        # blueprint = random.choice(self.world.get_blueprint_library().filter(self._actor_filter))
+        blueprint = self.world.get_blueprint_library().filter('vehicle.audi.tt')[0]
+        # https://carla.readthedocs.io/en/latest/bp_library/
+        blueprint.set_attribute('role_name', 'hero')
+        if blueprint.has_attribute('color'):
+            color = random.choice(blueprint.get_attribute('color').recommended_values)
+            blueprint.set_attribute('color', color)
+
+        # Spawn the player.
+        if self.player is not None:
+            spawn_point = self.player.get_transform()
+            spawn_point.location.z += 2.0
+            spawn_point.rotation.roll = 0.0
+            spawn_point.rotation.pitch = 0.0
+            self.destroy()
+            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            self.modify_vehicle_physics(self.player)
+        while self.player is None:
+            if not self.map.get_spawn_points():
+                print('There are no spawn points available in your map/town.')
+                print('Please add some Vehicle Spawn Point to your UE4 scene.')
+                sys.exit(1)
+            spawn_points = self.map.get_spawn_points()
+            # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
+            spawn_point = agent_start_point;
+            self.player = self.world.try_spawn_actor(blueprint, spawn_point)
+            self.modify_vehicle_physics(self.player)
+        self.actor_list.append(self.player)
+            
+        # Spawn the vehicles
+        self.npc_v1 = self.spawn_vehicle('firetruck',  self.npc_v1, v1_start_point)
+        self.npc_v2 = self.spawn_vehicle('ambulance',  self.npc_v2, v2_start_point)
+        self.npc_v3 = self.spawn_vehicle('cybertruck', self.npc_v3, v3_start_point)
+        self.npc_v4 = self.spawn_vehicle('sprinter',   self.npc_v4, v4_start_point)
+        
+        self.npc_v.append(self.npc_v1)
+        self.npc_v.append(self.npc_v2)
+        self.npc_v.append(self.npc_v3)
+        self.npc_v.append(self.npc_v4)
+        # print(len(self.npc_v))
+        
+        # Spawn the walkers
+        if flag_spawn_walkers == True:
+            self.npc_w1 = self.spawn_walker('run', self.npc_w1, w1_start_point)
+            self.npc_w2 = self.spawn_walker('run', self.npc_w2, w2_start_point)
+            self.npc_w.append(self.npc_w1)
+            self.npc_w.append(self.npc_w2)
+            self.control_walkers();
+        
+        
 
         # example of how to use parameters
         # self._client.get_trafficmanager().global_percentage_speed_difference(30.0)
@@ -913,14 +927,18 @@ def game_loop(args):
     pygame.init()
     pygame.font.init()
     world = None
+    
+    fps_simu = 1000.0
+    time_stop = 2.0
 
     try:
         if args.seed:
             random.seed(args.seed)
 
+        
         client = carla.Client(args.host, args.port)
         client.set_timeout(4.0)
-
+        
         traffic_manager = client.get_trafficmanager()
         # sim_world = client.get_world()
         sim_world = client.load_world("Town01")
@@ -928,7 +946,7 @@ def game_loop(args):
         if args.sync:
             settings = sim_world.get_settings()
             settings.synchronous_mode = True
-            settings.fixed_delta_seconds = 0.05
+            settings.fixed_delta_seconds = 1.0/fps_simu #0.05
             sim_world.apply_settings(settings)
 
             traffic_manager.set_synchronous_mode(True)
@@ -939,6 +957,59 @@ def game_loop(args):
 
         hud = HUD(args.width, args.height)
         world = World(client, hud, args)
+        
+        # Weather
+        sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
+        # ClearNoon, CloudyNoon, WetNoon, WetCloudyNoon, SoftRainNoon, MidRainyNoon, HardRainNoon, 
+        # ClearSunset, CloudySunset, WetSunset, WetCloudySunset, SoftRainSunset, MidRainSunset, HardRainSunset.
+        
+        folder_output = "../../../results_kitti_carla/KITTI_Dataset_CARLA_v%s/%s/generated" %(client.get_client_version(), sim_world.get_map().name)
+        os.makedirs(folder_output) if not os.path.exists(folder_output) else [os.remove(f) for f in glob.glob(folder_output+"/*") if os.path.isfile(f)]
+        client.start_recorder(os.path.dirname(os.path.realpath(__file__))+"/"+folder_output+"/recording.log")
+        
+        # Wait for KITTI to stop
+        start = sim_world.get_snapshot().timestamp.elapsed_seconds
+        print("Waiting for KITTI to stop ...")
+        while sim_world.get_snapshot().timestamp.elapsed_seconds-start < time_stop: sim_world.tick()
+        print("KITTI stopped")
+        
+        # Set sensors transformation from KITTI
+        lidar_transform = carla.Transform(carla.Location(x=0, y=0, z=1.80), carla.Rotation(pitch=0, yaw=180, roll=0))
+        cam0_transform  = carla.Transform(carla.Location(x=0.30, y=0, z=1.70), carla.Rotation(pitch=0, yaw=0, roll=0))
+        cam1_transform  = carla.Transform(carla.Location(x=0.30, y=0.50, z=1.70), carla.Rotation(pitch=0, yaw=0, roll=0))
+        
+        # Take a screenshot
+        gen.screenshot(world.player, sim_world, world.actor_list, folder_output, carla.Transform(carla.Location(x=0.0, y=0, z=2.0), carla.Rotation(pitch=0, yaw=0, roll=0)))
+
+        # Create our sensors
+        gen.RGB.sensor_id_glob = 0
+        gen.SS.sensor_id_glob = 10
+        gen.Depth.sensor_id_glob = 20
+        gen.HDL64E.sensor_id_glob = 100
+        # VelodyneHDL64 = gen.HDL64E(world.player, world.world, world.actor_list, folder_output, lidar_transform)
+        # cam0 = gen.RGB(world.player, world.world, world.actor_list, folder_output, cam0_transform)
+        # cam1 = gen.RGB(world.player, world.world, world.actor_list, folder_output, cam1_transform)
+        # cam0_ss = gen.SS(world.player, world.world, world.actor_list, folder_output, cam0_transform)
+        # cam1_ss = gen.SS(world.player, world.world, world.actor_list, folder_output, cam1_transform)
+        # cam0_depth = gen.Depth(world.player, world.world, world.actor_list, folder_output, cam0_transform)
+        # cam1_depth = gen.Depth(world.player, world.world, world.actor_list, folder_output, cam1_transform)
+
+        # # Export LiDAR to cam0 transformation
+        # tf_lidar_cam0 = gen.transform_lidar_to_camera(lidar_transform, cam0_transform)
+        # with open(folder_output+"/lidar_to_cam0.txt", 'w') as posfile:
+        #     posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
+        #     posfile.write(str(tf_lidar_cam0[0][0])+" "+str(tf_lidar_cam0[0][1])+" "+str(tf_lidar_cam0[0][2])+" "+str(tf_lidar_cam0[0][3])+" ")
+        #     posfile.write(str(tf_lidar_cam0[1][0])+" "+str(tf_lidar_cam0[1][1])+" "+str(tf_lidar_cam0[1][2])+" "+str(tf_lidar_cam0[1][3])+" ")
+        #     posfile.write(str(tf_lidar_cam0[2][0])+" "+str(tf_lidar_cam0[2][1])+" "+str(tf_lidar_cam0[2][2])+" "+str(tf_lidar_cam0[2][3]))
+        
+        # # Export LiDAR to cam1 transformation
+        # tf_lidar_cam1 = gen.transform_lidar_to_camera(lidar_transform, cam1_transform)
+        # with open(folder_output+"/lidar_to_cam1.txt", 'w') as posfile:
+        #     posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
+        #     posfile.write(str(tf_lidar_cam1[0][0])+" "+str(tf_lidar_cam1[0][1])+" "+str(tf_lidar_cam1[0][2])+" "+str(tf_lidar_cam1[0][3])+" ")
+        #     posfile.write(str(tf_lidar_cam1[1][0])+" "+str(tf_lidar_cam1[1][1])+" "+str(tf_lidar_cam1[1][2])+" "+str(tf_lidar_cam1[1][3])+" ")
+        #     posfile.write(str(tf_lidar_cam1[2][0])+" "+str(tf_lidar_cam1[2][1])+" "+str(tf_lidar_cam1[2][2])+" "+str(tf_lidar_cam1[2][3]))
+        
         controller = KeyboardControl(world)
         if args.agent == "Basic":
             agent = BasicAgent(world.player)
@@ -951,7 +1022,6 @@ def game_loop(args):
               %(agent_waypoint[0].x, agent_waypoint[0].y, agent_waypoint[0].z) )
         
         # generate_npc  
-        # v1_agent = gen.spawn_npc(client, vehicles_list, 'firetruck', v1_start_point)
         # v1_agent = BehaviorAgent(world.npc_v1, behavior=args.behavior)
         # v1_agent.set_destination(v1_waypoint[0])
         
@@ -982,10 +1052,7 @@ def game_loop(args):
         # walker_speed = walker_speed2
         
         
-        # Weather
-        sim_world.set_weather(carla.WeatherParameters.CloudyNoon)
-        # ClearNoon, CloudyNoon, WetNoon, WetCloudyNoon, SoftRainNoon, MidRainyNoon, HardRainNoon, 
-        # ClearSunset, CloudySunset, WetSunset, WetCloudySunset, SoftRainSunset, MidRainSunset, HardRainSunset.
+        
                
         clock = pygame.time.Clock()
 
@@ -1001,6 +1068,7 @@ def game_loop(args):
             
         v_spawn_points = world.map.get_spawn_points()
 
+        start_record = time.time()
         
         while True:
             clock.tick()
@@ -1008,8 +1076,8 @@ def game_loop(args):
                 world.world.tick()
             else:
                 world.world.wait_for_tick()
-            if controller.parse_events():
-                return
+            # if controller.parse_events():
+            #     return
 
             world.tick(clock)
             world.render(display)
@@ -1021,7 +1089,7 @@ def game_loop(args):
                     if cnt_v_waypoint[i] > len(v_waypoint[i])-1:
                         world.v_agent[i].set_destination(random.choice(v_spawn_points).location)
                     else:
-                        agent.set_destination(v_waypoint[i][cnt_v_waypoint[i]])
+                        world.v_agent.set_destination(v_waypoint[i][cnt_v_waypoint[i]])
                         print('v%d_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                                 %(i, v_waypoint[i][cnt_v_waypoint[i]].x, v_waypoint[i][cnt_v_waypoint[i]].y, v_waypoint[i][cnt_v_waypoint[i]].z) )
             
@@ -1103,6 +1171,15 @@ def game_loop(args):
             # world.npc_v4.apply_control(v4_control)
             
         vehicles_list.clear()
+        
+        # print('Destroying KITTI')
+        # client.apply_batch([carla.command.DestroyActor(x) for x in world.actor_list])
+        # world.actor_list.clear()
+            
+        # print("Elapsed time : ", time.time()-start_record)
+        # print()
+            
+        # time.sleep(2.0)
 
     finally:
 
@@ -1114,6 +1191,7 @@ def game_loop(args):
             traffic_manager.set_synchronous_mode(True)
 
             world.destroy()
+            print("-->Destroying world")
 
         pygame.quit()
 
