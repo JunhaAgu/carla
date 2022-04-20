@@ -930,7 +930,8 @@ def game_loop(args):
     
     fps_simu = 1000.0
     time_stop = 2.0
-
+    n_frame = 300 #MAX=10000
+    
     try:
         if args.seed:
             random.seed(args.seed)
@@ -986,29 +987,29 @@ def game_loop(args):
         gen.SS.sensor_id_glob = 10
         gen.Depth.sensor_id_glob = 20
         gen.HDL64E.sensor_id_glob = 100
-        # VelodyneHDL64 = gen.HDL64E(world.player, world.world, world.actor_list, folder_output, lidar_transform)
-        # cam0 = gen.RGB(world.player, world.world, world.actor_list, folder_output, cam0_transform)
-        # cam1 = gen.RGB(world.player, world.world, world.actor_list, folder_output, cam1_transform)
-        # cam0_ss = gen.SS(world.player, world.world, world.actor_list, folder_output, cam0_transform)
-        # cam1_ss = gen.SS(world.player, world.world, world.actor_list, folder_output, cam1_transform)
-        # cam0_depth = gen.Depth(world.player, world.world, world.actor_list, folder_output, cam0_transform)
-        # cam1_depth = gen.Depth(world.player, world.world, world.actor_list, folder_output, cam1_transform)
+        VelodyneHDL64 = gen.HDL64E(world.player, sim_world, world.actor_list, folder_output, lidar_transform)
+        cam0 = gen.RGB(world.player, sim_world, world.actor_list, folder_output, cam0_transform)
+        cam1 = gen.RGB(world.player, sim_world, world.actor_list, folder_output, cam1_transform)
+        cam0_ss = gen.SS(world.player, sim_world, world.actor_list, folder_output, cam0_transform)
+        cam1_ss = gen.SS(world.player, sim_world, world.actor_list, folder_output, cam1_transform)
+        cam0_depth = gen.Depth(world.player, sim_world, world.actor_list, folder_output, cam0_transform)
+        cam1_depth = gen.Depth(world.player, sim_world, world.actor_list, folder_output, cam1_transform)
 
-        # # Export LiDAR to cam0 transformation
-        # tf_lidar_cam0 = gen.transform_lidar_to_camera(lidar_transform, cam0_transform)
-        # with open(folder_output+"/lidar_to_cam0.txt", 'w') as posfile:
-        #     posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
-        #     posfile.write(str(tf_lidar_cam0[0][0])+" "+str(tf_lidar_cam0[0][1])+" "+str(tf_lidar_cam0[0][2])+" "+str(tf_lidar_cam0[0][3])+" ")
-        #     posfile.write(str(tf_lidar_cam0[1][0])+" "+str(tf_lidar_cam0[1][1])+" "+str(tf_lidar_cam0[1][2])+" "+str(tf_lidar_cam0[1][3])+" ")
-        #     posfile.write(str(tf_lidar_cam0[2][0])+" "+str(tf_lidar_cam0[2][1])+" "+str(tf_lidar_cam0[2][2])+" "+str(tf_lidar_cam0[2][3]))
+        # Export LiDAR to cam0 transformation
+        tf_lidar_cam0 = gen.transform_lidar_to_camera(lidar_transform, cam0_transform)
+        with open(folder_output+"/lidar_to_cam0.txt", 'w') as posfile:
+            posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
+            posfile.write(str(tf_lidar_cam0[0][0])+" "+str(tf_lidar_cam0[0][1])+" "+str(tf_lidar_cam0[0][2])+" "+str(tf_lidar_cam0[0][3])+" ")
+            posfile.write(str(tf_lidar_cam0[1][0])+" "+str(tf_lidar_cam0[1][1])+" "+str(tf_lidar_cam0[1][2])+" "+str(tf_lidar_cam0[1][3])+" ")
+            posfile.write(str(tf_lidar_cam0[2][0])+" "+str(tf_lidar_cam0[2][1])+" "+str(tf_lidar_cam0[2][2])+" "+str(tf_lidar_cam0[2][3]))
         
-        # # Export LiDAR to cam1 transformation
-        # tf_lidar_cam1 = gen.transform_lidar_to_camera(lidar_transform, cam1_transform)
-        # with open(folder_output+"/lidar_to_cam1.txt", 'w') as posfile:
-        #     posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
-        #     posfile.write(str(tf_lidar_cam1[0][0])+" "+str(tf_lidar_cam1[0][1])+" "+str(tf_lidar_cam1[0][2])+" "+str(tf_lidar_cam1[0][3])+" ")
-        #     posfile.write(str(tf_lidar_cam1[1][0])+" "+str(tf_lidar_cam1[1][1])+" "+str(tf_lidar_cam1[1][2])+" "+str(tf_lidar_cam1[1][3])+" ")
-        #     posfile.write(str(tf_lidar_cam1[2][0])+" "+str(tf_lidar_cam1[2][1])+" "+str(tf_lidar_cam1[2][2])+" "+str(tf_lidar_cam1[2][3]))
+        # Export LiDAR to cam1 transformation
+        tf_lidar_cam1 = gen.transform_lidar_to_camera(lidar_transform, cam1_transform)
+        with open(folder_output+"/lidar_to_cam1.txt", 'w') as posfile:
+            posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
+            posfile.write(str(tf_lidar_cam1[0][0])+" "+str(tf_lidar_cam1[0][1])+" "+str(tf_lidar_cam1[0][2])+" "+str(tf_lidar_cam1[0][3])+" ")
+            posfile.write(str(tf_lidar_cam1[1][0])+" "+str(tf_lidar_cam1[1][1])+" "+str(tf_lidar_cam1[1][2])+" "+str(tf_lidar_cam1[1][3])+" ")
+            posfile.write(str(tf_lidar_cam1[2][0])+" "+str(tf_lidar_cam1[2][1])+" "+str(tf_lidar_cam1[2][2])+" "+str(tf_lidar_cam1[2][3]))
         
         controller = KeyboardControl(world)
         if args.agent == "Basic":
@@ -1068,7 +1069,15 @@ def game_loop(args):
             
         v_spawn_points = world.map.get_spawn_points()
 
+        
+        VelodyneHDL64.init()
+        gen.follow(world.player.get_transform(), sim_world)
+        # All sensors produce first data at the same time (this ts)
+        gen.Sensor.initial_ts = sim_world.get_snapshot().timestamp.elapsed_seconds
+            
         start_record = time.time()
+        print("Start record : ")
+        frame_current = 0
         
         while True:
             clock.tick()
@@ -1082,6 +1091,16 @@ def game_loop(args):
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
+            
+            frame_current = VelodyneHDL64.save()
+            cam0.save()
+            cam1.save()
+            # cam0_ss.save()
+            # cam1_ss.save()
+            # cam0_depth.save()
+            # cam1_depth.save()
+            gen.follow(world.player.get_transform(), sim_world)
+            # world.tick()    # Pass to the next simulator frame
             
             for i in range(0, len(world.v_agent)):
                 if world.v_agent[i].done():
@@ -1169,7 +1188,11 @@ def game_loop(args):
             # v4_control = v4_agent.run_step()
             # v4_control.manual_gear_shift = False
             # world.npc_v4.apply_control(v4_control)
-            
+        
+        VelodyneHDL64.save_poses()
+        client.stop_recorder()
+        print("Stop record")
+        
         vehicles_list.clear()
         
         # print('Destroying KITTI')

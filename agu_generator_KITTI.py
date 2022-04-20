@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import glob
 import os
 import sys
@@ -55,7 +53,7 @@ class Camera(Sensor):
         Sensor.__init__(self, vehicle, world, actor_list, folder_output, transform)
         self.sensor_frame_id = 0
         self.frame_output = self.folder_output+"/images_%s" %str.lower(self.__class__.__name__)
-        os.makedirs(self.frame_output) if not os.path.exists(self.frame_output) else [os.remove(f) for f in glob.glob(self.frame_output+"/*") if os.path.isfile(f)]
+        # os.makedirs(self.frame_output) if not os.path.exists(self.frame_output) else [os.remove(f) for f in glob.glob(self.frame_output+"/*") if os.path.isfile(f)]
 
         with open(self.folder_output+"/full_ts_camera.txt", 'w') as file:
             file.write("# frame_id timestamp\n")
@@ -71,8 +69,12 @@ class Camera(Sensor):
                 print("[Error in timestamp] Camera: previous_ts %f -> ts %f" %(self.ts_tmp, ts))
                 sys.exit()
             self.ts_tmp = ts
-
-            file_path = self.frame_output+"/%04d_%d.png" %(self.sensor_frame_id, self.sensor_id)
+            
+            id_str = str(self.sensor_id)
+            if id_str[-1]=='0':
+                file_path = self.frame_output+"0/%04d.png" %(self.sensor_frame_id)
+            elif id_str[-1]=='1':
+                file_path = self.frame_output+"1/%04d.png" %(self.sensor_frame_id)
             x = threading.Thread(target=data.save_to_disk, args=(file_path, color_converter))
             x.start()
             print("Export : "+file_path)
@@ -326,7 +328,7 @@ def spawn_npc(client, nbr_vehicles, nbr_walkers, vehicles_list, all_walkers_id):
         world = client.get_world()
 
         traffic_manager = client.get_trafficmanager()
-        traffic_manager.set_global_distance_to_leading_vehicle(1.0)
+        traffic_manager.set_global_distance_to_leading_vehicle(2.0)
         
         #traffic_manager.set_hybrid_physics_mode(True)
         #traffic_manager.set_random_device_seed(args.seed)
@@ -340,18 +342,18 @@ def spawn_npc(client, nbr_vehicles, nbr_walkers, vehicles_list, all_walkers_id):
         safe = True
         if safe:
                 blueprints = [x for x in blueprints if int(x.get_attribute('number_of_wheels')) == 4]
-                blueprints = [x for x in blueprints if not x.id.endswith('isetta')]
-                blueprints = [x for x in blueprints if not x.id.endswith('carlacola')]
-                blueprints = [x for x in blueprints if not x.id.endswith('cybertruck')]
-                blueprints = [x for x in blueprints if not x.id.endswith('t2')]
-                blueprints = [x for x in blueprints if not x.id.endswith('firetruck')] #agu
-                blueprints = [x for x in blueprints if not x.id.endswith('ambulance')] #agu
+                # blueprints = [x for x in blueprints if not x.id.endswith('isetta')]
+                # blueprints = [x for x in blueprints if not x.id.endswith('carlacola')]
+                # blueprints = [x for x in blueprints if not x.id.endswith('cybertruck')]
+                # blueprints = [x for x in blueprints if not x.id.endswith('t2')]
+                # blueprints = [x for x in blueprints if not x.id.endswith('firetruck')] #agu
+                # blueprints = [x for x in blueprints if not x.id.endswith('ambulance')] #agu
 
         blueprints = sorted(blueprints, key=lambda bp: bp.id)
 
         spawn_points = world.get_map().get_spawn_points()
         number_of_spawn_points = len(spawn_points)
-        print("Number of spawn points : ", number_of_spawn_points)
+        print("Number of spawn points: ", number_of_spawn_points)
 
         if nbr_vehicles <= number_of_spawn_points:
                 random.shuffle(spawn_points)
