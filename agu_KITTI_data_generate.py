@@ -92,8 +92,8 @@ def main():
         settings.no_rendering_mode = False
         world.apply_settings(settings)
         
-        # traffic_manager = client.get_trafficmanager()
-        # traffic_manager.set_synchronous_mode(True)
+        traffic_manager = client.get_trafficmanager()
+        traffic_manager.set_synchronous_mode(True)
         
         # Create KITTI vehicle
         blueprint_library = world.get_blueprint_library()

@@ -197,6 +197,8 @@ class HDL64E(Sensor):
         self.list_trajectory = []
 
         self.ts_tmp = 0.0
+        
+        self.flag_pts_pose_sync = False;
         print('created %s' % self.sensor)
 
     def init(self):
@@ -204,6 +206,8 @@ class HDL64E(Sensor):
         self.initial_rot_transpose = (rotation_carla(self.sensor.get_transform().rotation).dot(self.rotation_lidar)).T
         with open(self.calib_output+"/full_poses_lidar.txt", 'w') as posfile:
             posfile.write("# R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2) timestamp\n")
+        with open(self.calib_output+"/sync_poses_lidar.txt", 'w') as posfile_sync:
+            posfile_sync.write("# R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2) timestamp\n")
 
     def save(self):
         while not self.queue.empty():
@@ -215,38 +219,47 @@ class HDL64E(Sensor):
 
             self.ts_tmp = ts
 
-            nbr_pts = len(data.raw_data)//24 #4 float32 and 2 uint
+            # nbr_pts = len(data.raw_data)//24 #4 float32 and 2 uint
+            nbr_pts = len(data.raw_data)//16 #4 float32
             self.list_ts.append(np.broadcast_to(ts, nbr_pts))
-            buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('cos','f4'),('index','u4'),('semantic','u4')]))
+            # buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('cos','f4'),('index','u4'),('semantic','u4')]))
+            buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('i','f4')]))
             
             # We're negating the y to correctly visualize a world that matches what we see in Unreal since we uses a right-handed coordinate system
-            self.list_pts.append(np.array([buffer[:]['x'], -buffer[:]['y'], buffer[:]['z'], buffer[:]['cos']]))
-            self.list_semantic.append(np.array([buffer[:]['index'], buffer[:]['semantic']]))
+            self.list_pts.append(np.array([buffer[:]['x'], -buffer[:]['y'], buffer[:]['z'], buffer[:]['i']]))
+            # self.list_semantic.append(np.array([buffer[:]['index'], buffer[:]['semantic']]))
             
             self.i_packet += 1
             if self.i_packet%self.packet_per_frame == 0:
                 pts_all = np.hstack(self.list_pts)
                 # add LiDAR noise
                 # print((pts_all.shape[1]));
-                pts_all[0,:] = pts_all[0,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
-                pts_all[1,:] = pts_all[1,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
-                pts_all[2,:] = pts_all[2,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
+                # pts_all[0,:] = pts_all[0,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
+                # pts_all[1,:] = pts_all[1,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
+                # pts_all[2,:] = pts_all[2,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
                 pts_all[0:3,:] = self.rotation_lidar_transpose.dot(pts_all[0:3,:])
                 pts_all = pts_all.T
-                semantic_all = np.hstack(self.list_semantic).T
+                # semantic_all = np.hstack(self.list_semantic).T
                 ts_all = np.concatenate(self.list_ts)
                 self.list_pts = []
-                self.list_semantic = []
+                # self.list_semantic = []
                 self.list_ts = []
 
                 ply_file_path = self.frame_output+"/frame_%04d.ply" %self.i_frame
 
-                if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all), np.uint32(semantic_all)], ['x','y','z','cos_angle_lidar_surface','timestamp','instance','semantic']):
+                # if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all), np.uint32(semantic_all)], ['x','y','z','cos_angle_lidar_surface','timestamp','instance','semantic']):
+                #     print("Export : "+ply_file_path)
+                # else:
+                #     print('ply.write_ply() failed')
+                if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all)], ['x','y','z','intensity','timestamp']):
                     print("Export : "+ply_file_path)
                 else:
                     print('ply.write_ply() failed')
 
                 self.i_frame += 1
+                
+                self.flag_pts_pose_sync = True;
+                
 
             R_W = self.initial_rot_transpose.dot(rotation_carla(data.transform.rotation).dot(self.rotation_lidar))
             T_W = self.initial_rot_transpose.dot(translation_carla(data.transform.location) - self.initial_loc)
@@ -256,6 +269,14 @@ class HDL64E(Sensor):
                 posfile.write(" ".join(map(str,[r for r in R_W[1]]))+" "+str(T_W[1])+" ")
                 posfile.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+" ")
                 posfile.write(str(ts)+"\n")
+        
+            if self.flag_pts_pose_sync == True:
+                with open(self.calib_output+"/sync_poses_lidar.txt", 'a') as posfile_sync:
+                    posfile_sync.write(" ".join(map(str,[r for r in R_W[0]]))+" "+str(T_W[0])+" ")
+                    posfile_sync.write(" ".join(map(str,[r for r in R_W[1]]))+" "+str(T_W[1])+" ")
+                    posfile_sync.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+" ")
+                    posfile_sync.write(str(ts)+"\n")
+                self.flag_pts_pose_sync = False
 
             self.list_trajectory.extend([struct.pack('f', T) for T in T_W])
             self.list_trajectory.append(struct.pack('f', ts))
@@ -273,13 +294,18 @@ class HDL64E(Sensor):
         
 
     def set_attributes(self, blueprint_library):
-        lidar_bp = blueprint_library.find('sensor.lidar.ray_cast_semantic')
+        # lidar_bp = blueprint_library.find('sensor.lidar.ray_cast_semantic')
+        lidar_bp = blueprint_library.find('sensor.lidar.ray_cast')
         lidar_bp.set_attribute('channels', '64')
         lidar_bp.set_attribute('range', '80.0')    # 80.0 m
-        lidar_bp.set_attribute('points_per_second', str(64/0.00004608))
+        lidar_bp.set_attribute('points_per_second', '2880000') #str(64/0.00004608)
         lidar_bp.set_attribute('rotation_frequency', '10')
         lidar_bp.set_attribute('upper_fov', str(2))
         lidar_bp.set_attribute('lower_fov', str(-24.8))
+        lidar_bp.set_attribute('sensor_tick', '0.0')
+        lidar_bp.set_attribute('dropoff_general_rate', '0.45')
+        lidar_bp.set_attribute('noise_stddev','0.03')
+        lidar_bp.set_attribute('horizontal_fov','360')
         return lidar_bp
 
 # Function to change rotations in CARLA from left-handed to right-handed reference frame
@@ -299,12 +325,12 @@ def translation_carla(location):
     else:
         return np.array([location.x, -location.y, location.z])
 
-def transform_lidar_to_camera(lidar_tranform, camera_transform):
-    R_camera_vehicle = rotation_carla(camera_transform.rotation)
-    R_lidar_vehicle = np.identity(3) #rotation_carla(lidar_tranform.rotation) #we want the lidar frame to have x forward
-    R_lidar_camera = R_camera_vehicle.T.dot(R_lidar_vehicle)
-    T_lidar_camera = R_camera_vehicle.T.dot(translation_carla(np.array([[lidar_tranform.location.x],[lidar_tranform.location.y],[lidar_tranform.location.z]])-np.array([[camera_transform.location.x],[camera_transform.location.y],[camera_transform.location.z]])))
-    return np.vstack((np.hstack((R_lidar_camera, T_lidar_camera)), [0,0,0,1]))
+def transform_camera_to_lidar(lidar_tranform, camera_transform):
+    R_vehicle_camera = rotation_carla(camera_transform.rotation)
+    R_vehicle_lidar = np.identity(3) #rotation_carla(lidar_tranform.rotation) #we want the lidar frame to have x forward
+    R_camera_lidar = R_vehicle_camera.T.dot(R_vehicle_lidar)
+    T_camera_lidar = R_vehicle_camera.T.dot(translation_carla(np.array([[lidar_tranform.location.x],[lidar_tranform.location.y],[lidar_tranform.location.z]])-np.array([[camera_transform.location.x],[camera_transform.location.y],[camera_transform.location.z]])))
+    return np.vstack((np.hstack((R_camera_lidar, T_camera_lidar)), [0,0,0,1]))
 
 def screenshot(vehicle, world, actor_list, folder_output, transform):
     sensor = world.spawn_actor(RGB.set_attributes(RGB, world.get_blueprint_library()), transform, attach_to=vehicle)

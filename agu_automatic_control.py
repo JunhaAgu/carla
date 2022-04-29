@@ -87,33 +87,60 @@ if global_map_id==1:
      (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
      ])
     #firetruck
-    v1_start_point = carla.Transform(carla.Location(x=92.3,y=107.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    # v1_start_point = carla.Transform(carla.Location(x=31.3,y=210.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    # v1_waypoint = np.array([
+    #  (carla.Location(x=92.1, y=26.4,  z=0.3))
+    #  ])
+    v1_start_point = carla.Transform(carla.Location(x=211.5,y=129.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
     v1_waypoint = np.array([
-     (carla.Location(x=92.1, y=26.4,  z=0.3))
+     (carla.Location(x=111.0, y=129.5,  z=0.3)),
+     (carla.Location(x=92.3, y=120.8, z=2))
      ])
     #ambulance
-    v2_start_point = carla.Transform(carla.Location(x=120.0,y=55.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    # v2_start_point = carla.Transform(carla.Location(x=120.0,y=55.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    # v2_waypoint = np.array([
+    # (carla.Location(x=92.1, y=26.4,  z=0.3))
+    #  ])
+    v2_start_point = carla.Transform(carla.Location(x=334.8,y=60.5,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v2_waypoint = np.array([
-    (carla.Location(x=92.1, y=26.4,  z=0.3))
+    (carla.Location(x=311.5, y=129.5,  z=0.3)),
+    # (carla.Location(x=111.0, y=129.5,  z=0.3))
      ])
     #cybertruck
-    v3_start_point = carla.Transform(carla.Location(x=92.3,y=150.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    v3_start_point = carla.Transform(carla.Location(x=92.3,y=120.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
     v3_waypoint = np.array([
-    (carla.Location(x=190.0, y=58.5,  z=0.3))
+    (carla.Location(x=190.0, y=59.5,  z=0.3))
      ])
     #sprinter
-    v4_start_point = carla.Transform(carla.Location(x=170.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    v4_start_point = carla.Transform(carla.Location(x=170.0,y=59.5,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
     v4_waypoint = np.array([
-    (carla.Location(x=158.1, y=33.7,  z=0.3))
+    (carla.Location(x=100.1, y=59.5,  z=0.3))
+     ])
+    #firetruck2
+    v5_start_point = carla.Transform(carla.Location(x=334.8,y=106.5,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+    v5_waypoint = np.array([
+    (carla.Location(x=311.5, y=129.5,  z=0.3)),
+    # (carla.Location(x=111.0, y=129.5,  z=0.3))
+     ])
+    #firetruck3
+    v6_start_point = carla.Transform(carla.Location(x=334.8,y=70.5,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+    v6_waypoint = np.array([
+    (carla.Location(x=311.5, y=129.5,  z=0.3)),
+    # (carla.Location(x=111.0, y=129.5,  z=0.3))
      ])
     v_start_point.append(v1_start_point)
     v_start_point.append(v2_start_point)
     v_start_point.append(v3_start_point)
     v_start_point.append(v4_start_point)
+    v_start_point.append(v5_start_point)
+    v_start_point.append(v6_start_point)
     v_waypoint.append(v1_waypoint)
     v_waypoint.append(v2_waypoint)
     v_waypoint.append(v3_waypoint)
     v_waypoint.append(v4_waypoint)
+    v_waypoint.append(v5_waypoint)
+    v_waypoint.append(v6_waypoint)
+
     
     w1_start_point = carla.Transform(carla.Location(x=110.0,y=61.0,z=2), carla.Rotation(pitch = 0, yaw=-180, roll=0))
     w1_waypoint = np.array([
@@ -184,6 +211,8 @@ class World(object):
         self.npc_v2 = None
         self.npc_v3 = None
         self.npc_v4 = None
+        self.npc_v5 = None
+        self.npc_v6 = None
         self.npc_v = []
         
         self.npc_w1 = None
@@ -356,11 +385,16 @@ class World(object):
         self.npc_v2 = self.spawn_vehicle('ambulance',  self.npc_v2, v2_start_point)
         self.npc_v3 = self.spawn_vehicle('cybertruck', self.npc_v3, v3_start_point)
         self.npc_v4 = self.spawn_vehicle('sprinter',   self.npc_v4, v4_start_point)
+        self.npc_v5 = self.spawn_vehicle('firetruck',   self.npc_v5, v5_start_point)
+        self.npc_v6 = self.spawn_vehicle('firetruck',   self.npc_v6, v6_start_point)
         
         self.npc_v.append(self.npc_v1)
         self.npc_v.append(self.npc_v2)
         self.npc_v.append(self.npc_v3)
         self.npc_v.append(self.npc_v4)
+        self.npc_v.append(self.npc_v5)
+        self.npc_v.append(self.npc_v6)
+
         # print(len(self.npc_v))
         
         # Spawn the walkers
@@ -436,6 +470,8 @@ class World(object):
             self.npc_v2,
             self.npc_v3,
             self.npc_v4,
+            self.npc_v5,
+            self.npc_v6
             # self.npc_v,
             # self.v_agent,
             # self.v_control
@@ -928,9 +964,10 @@ def game_loop(args):
     pygame.font.init()
     world = None
     
-    fps_simu = 1000.0
+    #parameter
+    fps_simu = 100.0
     time_stop = 2.0
-    n_frame = 300 #MAX=10000
+    nbr_frame = 10000 #180 #MAX=10000
     
     try:
         if args.seed:
@@ -942,8 +979,10 @@ def game_loop(args):
         
         traffic_manager = client.get_trafficmanager()
         # sim_world = client.get_world()
-        sim_world = client.load_world("Town01")
-                  
+        # sim_world = client.load_world("Town01")
+        sim_world = client.load_world('Town01_Opt', carla.MapLayer.Buildings | carla.MapLayer.ParkedVehicles | carla.MapLayer.StreetLights)
+        sim_world.unload_map_layer(carla.MapLayer.StreetLights)
+        
         if args.sync:
             settings = sim_world.get_settings()
             settings.synchronous_mode = True
@@ -975,9 +1014,9 @@ def game_loop(args):
         print("KITTI stopped")
         
         # Set sensors transformation from KITTI
-        lidar_transform = carla.Transform(carla.Location(x=0, y=0, z=1.80), carla.Rotation(pitch=0, yaw=180, roll=0))
-        cam0_transform  = carla.Transform(carla.Location(x=0.30, y=0, z=1.70), carla.Rotation(pitch=0, yaw=0, roll=0))
-        cam1_transform  = carla.Transform(carla.Location(x=0.30, y=0.50, z=1.70), carla.Rotation(pitch=0, yaw=0, roll=0))
+        lidar_transform = carla.Transform(carla.Location(x=0, y=0, z=1.73), carla.Rotation(pitch=0, yaw=180, roll=0))
+        cam0_transform  = carla.Transform(carla.Location(x=0.27, y=0, z=1.65), carla.Rotation(pitch=0, yaw=0, roll=0))
+        cam1_transform  = carla.Transform(carla.Location(x=0.27, y=0.54, z=1.65), carla.Rotation(pitch=0, yaw=0, roll=0))
         
         # Take a screenshot
         gen.screenshot(world.player, sim_world, world.actor_list, folder_output, carla.Transform(carla.Location(x=0.0, y=0, z=2.0), carla.Rotation(pitch=0, yaw=0, roll=0)))
@@ -995,21 +1034,21 @@ def game_loop(args):
         cam0_depth = gen.Depth(world.player, sim_world, world.actor_list, folder_output, cam0_transform)
         cam1_depth = gen.Depth(world.player, sim_world, world.actor_list, folder_output, cam1_transform)
 
-        # Export LiDAR to cam0 transformation
-        tf_lidar_cam0 = gen.transform_lidar_to_camera(lidar_transform, cam0_transform)
-        with open(folder_output+"/lidar_to_cam0.txt", 'w') as posfile:
+        # Export cam0 to LiDAR transformation: T_CL
+        tf_cam0_lidar = gen.transform_camera_to_lidar(lidar_transform, cam0_transform)
+        with open(folder_output+"/cam0_to_lidar.txt", 'w') as posfile:
             posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
-            posfile.write(str(tf_lidar_cam0[0][0])+" "+str(tf_lidar_cam0[0][1])+" "+str(tf_lidar_cam0[0][2])+" "+str(tf_lidar_cam0[0][3])+" ")
-            posfile.write(str(tf_lidar_cam0[1][0])+" "+str(tf_lidar_cam0[1][1])+" "+str(tf_lidar_cam0[1][2])+" "+str(tf_lidar_cam0[1][3])+" ")
-            posfile.write(str(tf_lidar_cam0[2][0])+" "+str(tf_lidar_cam0[2][1])+" "+str(tf_lidar_cam0[2][2])+" "+str(tf_lidar_cam0[2][3]))
+            posfile.write(str(tf_cam0_lidar[0][0])+" "+str(tf_cam0_lidar[0][1])+" "+str(tf_cam0_lidar[0][2])+" "+str(tf_cam0_lidar[0][3])+" ")
+            posfile.write(str(tf_cam0_lidar[1][0])+" "+str(tf_cam0_lidar[1][1])+" "+str(tf_cam0_lidar[1][2])+" "+str(tf_cam0_lidar[1][3])+" ")
+            posfile.write(str(tf_cam0_lidar[2][0])+" "+str(tf_cam0_lidar[2][1])+" "+str(tf_cam0_lidar[2][2])+" "+str(tf_cam0_lidar[2][3]))
         
-        # Export LiDAR to cam1 transformation
-        tf_lidar_cam1 = gen.transform_lidar_to_camera(lidar_transform, cam1_transform)
-        with open(folder_output+"/lidar_to_cam1.txt", 'w') as posfile:
+        # Export cam1 to LiDAR transformation: T_CL
+        tf_cam1_lidar = gen.transform_camera_to_lidar(lidar_transform, cam1_transform)
+        with open(folder_output+"/cam1_to_lidar.txt", 'w') as posfile:
             posfile.write("#R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2)\n")
-            posfile.write(str(tf_lidar_cam1[0][0])+" "+str(tf_lidar_cam1[0][1])+" "+str(tf_lidar_cam1[0][2])+" "+str(tf_lidar_cam1[0][3])+" ")
-            posfile.write(str(tf_lidar_cam1[1][0])+" "+str(tf_lidar_cam1[1][1])+" "+str(tf_lidar_cam1[1][2])+" "+str(tf_lidar_cam1[1][3])+" ")
-            posfile.write(str(tf_lidar_cam1[2][0])+" "+str(tf_lidar_cam1[2][1])+" "+str(tf_lidar_cam1[2][2])+" "+str(tf_lidar_cam1[2][3]))
+            posfile.write(str(tf_cam1_lidar[0][0])+" "+str(tf_cam1_lidar[0][1])+" "+str(tf_cam1_lidar[0][2])+" "+str(tf_cam1_lidar[0][3])+" ")
+            posfile.write(str(tf_cam1_lidar[1][0])+" "+str(tf_cam1_lidar[1][1])+" "+str(tf_cam1_lidar[1][2])+" "+str(tf_cam1_lidar[1][3])+" ")
+            posfile.write(str(tf_cam1_lidar[2][0])+" "+str(tf_cam1_lidar[2][1])+" "+str(tf_cam1_lidar[2][2])+" "+str(tf_cam1_lidar[2][3]))
         
         controller = KeyboardControl(world)
         if args.agent == "Basic":
@@ -1051,10 +1090,7 @@ def game_loop(args):
         #                 walkers_list.append({"id": results[i].actor_id})
         #                 walker_speed2.append(walker_speed[i])
         # walker_speed = walker_speed2
-        
-        
-        
-               
+
         clock = pygame.time.Clock()
 
         cnt_waypoint = 0;
@@ -1065,10 +1101,12 @@ def game_loop(args):
         
         cnt_v_waypoint = []
         for i in range(0, len(v_waypoint)):
-            cnt_v_waypoint.append(0)
+            cnt_v_waypoint.append(i)
             
         v_spawn_points = world.map.get_spawn_points()
 
+        # Pass to the next simulator frame to spawn sensors and to retrieve first data
+        sim_world.tick()
         
         VelodyneHDL64.init()
         gen.follow(world.player.get_transform(), sim_world)
@@ -1079,7 +1117,7 @@ def game_loop(args):
         print("Start record : ")
         frame_current = 0
         
-        while True:
+        while (frame_current < nbr_frame):
             clock.tick()
             if args.sync:
                 world.world.tick()
@@ -1094,7 +1132,7 @@ def game_loop(args):
             
             frame_current = VelodyneHDL64.save()
             cam0.save()
-            cam1.save()
+            # cam1.save()
             # cam0_ss.save()
             # cam1_ss.save()
             # cam0_depth.save()
@@ -1108,7 +1146,7 @@ def game_loop(args):
                     if cnt_v_waypoint[i] > len(v_waypoint[i])-1:
                         world.v_agent[i].set_destination(random.choice(v_spawn_points).location)
                     else:
-                        world.v_agent.set_destination(v_waypoint[i][cnt_v_waypoint[i]])
+                        world.v_agent[i].set_destination(v_waypoint[i][cnt_v_waypoint[i]])
                         print('v%d_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                                 %(i, v_waypoint[i][cnt_v_waypoint[i]].x, v_waypoint[i][cnt_v_waypoint[i]].y, v_waypoint[i][cnt_v_waypoint[i]].z) )
             
@@ -1150,6 +1188,8 @@ def game_loop(args):
 
             if agent.done():
                 cnt_waypoint += 1
+                if cnt_waypoint > len(agent_waypoint)-1:
+                    break
                 agent.set_destination(agent_waypoint[cnt_waypoint])
                 print('new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                     %(agent_waypoint[cnt_waypoint].x, agent_waypoint[cnt_waypoint].y, agent_waypoint[cnt_waypoint].z) )
@@ -1273,7 +1313,7 @@ def main():
         '-b', '--behavior', type=str,
         choices=["cautious", "normal", "aggressive"],
         help='Choose one of the possible agent behaviors (default: normal) ',
-        default='normal')
+        default='aggressive')
     argparser.add_argument(
         '-s', '--seed',
         help='Set seed for repeating executions (default: None)',
