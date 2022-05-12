@@ -967,7 +967,7 @@ def game_loop(args):
     #parameter
     fps_simu = 100.0
     time_stop = 2.0
-    nbr_frame = 10000 #180 #MAX=10000
+    nbr_frame = 180 #180 #MAX=10000
     
     try:
         if args.seed:
@@ -1126,6 +1126,7 @@ def game_loop(args):
             # if controller.parse_events():
             #     return
 
+            sim_world.tick()
             world.tick(clock)
             world.render(display)
             pygame.display.flip()
