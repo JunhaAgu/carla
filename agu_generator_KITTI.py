@@ -26,7 +26,7 @@ import numpy as np
 import random
 import threading
 
-SIGMA_LIDAR_NOISE = 0.03 #0.03 = std dev of the Velodyne HDL64E
+SIGMA_LIDAR_NOISE = 0.02 #0.02 = std dev of the Velodyne HDL64E
 
 
 def sensor_callback(ts, sensor_data, sensor_queue):
@@ -219,42 +219,44 @@ class HDL64E(Sensor):
 
             self.ts_tmp = ts
 
-            # nbr_pts = len(data.raw_data)//24 #4 float32 and 2 uint
-            nbr_pts = len(data.raw_data)//16 #4 float32
+            nbr_pts = len(data.raw_data)//24 #4 float32 and 2 uint
+            # nbr_pts = len(data.raw_data)//16 #4 float32
             self.list_ts.append(np.broadcast_to(ts, nbr_pts))
-            # buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('cos','f4'),('index','u4'),('semantic','u4')]))
-            buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('i','f4')]))
+            buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('cos','f4'),('index','u4'),('semantic','u4')]))
+            # buffer = np.frombuffer(data.raw_data, dtype=np.dtype([('x','f4'),('y','f4'),('z','f4'),('i','f4')]))
             
             # We're negating the y to correctly visualize a world that matches what we see in Unreal since we uses a right-handed coordinate system
-            self.list_pts.append(np.array([buffer[:]['x'], -buffer[:]['y'], buffer[:]['z'], buffer[:]['i']]))
-            # self.list_semantic.append(np.array([buffer[:]['index'], buffer[:]['semantic']]))
+            # self.list_pts.append(np.array([buffer[:]['x'], -buffer[:]['y'], buffer[:]['z'], buffer[:]['i']]))
+            self.list_pts.append(np.array([buffer[:]['x'], -buffer[:]['y'], buffer[:]['z'], buffer[:]['cos']]))
+            self.list_semantic.append(np.array([buffer[:]['index'], buffer[:]['semantic']]))
             
             self.i_packet += 1
+            # if self.i_packet%self.packet_per_frame == 0:
             if self.i_packet%self.packet_per_frame == 0:
                 pts_all = np.hstack(self.list_pts)
                 # add LiDAR noise
                 # print((pts_all.shape[1]));
-                # pts_all[0,:] = pts_all[0,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
-                # pts_all[1,:] = pts_all[1,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
-                # pts_all[2,:] = pts_all[2,:] + SIGMA_LIDAR_NOISE*( 2*np.random.rand(1, (pts_all.shape[1])) - np.ones(pts_all.shape[1]) )
+                pts_all[0,:] = pts_all[0,:] + SIGMA_LIDAR_NOISE*( np.random.randn(1, (pts_all.shape[1])) )
+                pts_all[1,:] = pts_all[1,:] + SIGMA_LIDAR_NOISE*( np.random.randn(1, (pts_all.shape[1])) )
+                pts_all[2,:] = pts_all[2,:] + SIGMA_LIDAR_NOISE*( np.random.randn(1, (pts_all.shape[1])) )
                 pts_all[0:3,:] = self.rotation_lidar_transpose.dot(pts_all[0:3,:])
                 pts_all = pts_all.T
-                # semantic_all = np.hstack(self.list_semantic).T
+                semantic_all = np.hstack(self.list_semantic).T
                 ts_all = np.concatenate(self.list_ts)
                 self.list_pts = []
-                # self.list_semantic = []
+                self.list_semantic = []
                 self.list_ts = []
 
                 ply_file_path = self.frame_output+"/frame_%04d.ply" %self.i_frame
 
-                # if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all), np.uint32(semantic_all)], ['x','y','z','cos_angle_lidar_surface','timestamp','instance','semantic']):
-                #     print("Export : "+ply_file_path)
-                # else:
-                #     print('ply.write_ply() failed')
-                if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all)], ['x','y','z','intensity','timestamp']):
+                if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all), np.uint32(semantic_all)], ['x','y','z','cos_angle_lidar_surface','timestamp','instance','semantic']):
                     print("Export : "+ply_file_path)
                 else:
                     print('ply.write_ply() failed')
+                # if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all)], ['x','y','z','intensity','timestamp']):
+                #     print("Export : "+ply_file_path)
+                # else:
+                #     print('ply.write_ply() failed')
 
                 self.i_frame += 1
                 
@@ -294,19 +296,28 @@ class HDL64E(Sensor):
         
 
     def set_attributes(self, blueprint_library):
-        # lidar_bp = blueprint_library.find('sensor.lidar.ray_cast_semantic')
-        lidar_bp = blueprint_library.find('sensor.lidar.ray_cast')
+        lidar_bp = blueprint_library.find('sensor.lidar.ray_cast_semantic')
         lidar_bp.set_attribute('channels', '64')
         lidar_bp.set_attribute('range', '80.0')    # 80.0 m
-        lidar_bp.set_attribute('points_per_second', '2880000') #str(64/0.00004608)
+        lidar_bp.set_attribute('points_per_second', str(64/0.00004608))
         lidar_bp.set_attribute('rotation_frequency', '10')
         lidar_bp.set_attribute('upper_fov', str(2))
         lidar_bp.set_attribute('lower_fov', str(-24.8))
-        lidar_bp.set_attribute('sensor_tick', '0.0')
-        lidar_bp.set_attribute('dropoff_general_rate', '0.45')
-        lidar_bp.set_attribute('noise_stddev','0.03')
-        lidar_bp.set_attribute('horizontal_fov','360')
         return lidar_bp
+    # def set_attributes(self, blueprint_library):
+    #     # lidar_bp = blueprint_library.find('sensor.lidar.ray_cast_semantic')
+    #     lidar_bp = blueprint_library.find('sensor.lidar.ray_cast')
+    #     lidar_bp.set_attribute('channels', '64')
+    #     lidar_bp.set_attribute('range', '80.0')    # 80.0 m
+    #     lidar_bp.set_attribute('points_per_second', '2880000') #str(64/0.00004608)
+    #     lidar_bp.set_attribute('rotation_frequency', '10')
+    #     lidar_bp.set_attribute('upper_fov', str(2))
+    #     lidar_bp.set_attribute('lower_fov', str(-24.8))
+    #     lidar_bp.set_attribute('sensor_tick', '0.0')
+    #     lidar_bp.set_attribute('dropoff_general_rate', '0.45')
+    #     lidar_bp.set_attribute('noise_stddev','0.03')
+    #     lidar_bp.set_attribute('horizontal_fov','360')
+    #     return lidar_bp
 
 # Function to change rotations in CARLA from left-handed to right-handed reference frame
 def rotation_carla(rotation):
@@ -316,6 +327,7 @@ def rotation_carla(rotation):
     sp = math.sin(math.radians(rotation.pitch))
     cy = math.cos(math.radians(rotation.yaw))
     sy = math.sin(math.radians(rotation.yaw))
+    # return np.array([[cy*cp, -cy*sp*sr-sy*cr, -cy*sp*cr+sy*sr],[sy*cp, -sy*sp*sr+cy*cr, -sy*sp*cr-cy*sr],[sp, cp*sr, cp*cr]])
     return np.array([[cy*cp, -cy*sp*sr+sy*cr, -cy*sp*cr-sy*sr],[-sy*cp, sy*sp*sr+cy*cr, sy*sp*cr-cy*sr],[sp, cp*sr, cp*cr]])
 
 # Function to change translations in CARLA from left-handed to right-handed reference frame
