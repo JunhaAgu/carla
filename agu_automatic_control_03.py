@@ -67,7 +67,7 @@ import time
 # ==============================================================================
 # -- Global parameters ---------------------------------------------------------
 # ==============================================================================
-global_map_id = 1
+global_map_id = 3
 flag_spawn_walkers = False
 
 v_start_point = []
@@ -76,80 +76,78 @@ v_waypoint = []
 w_start_point = []
 w_waypoint = []
 
-if global_map_id==1:
-    agent_start_point = carla.Transform(carla.Location(x=170.0,y=55.6,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+if global_map_id==3:
+    agent_start_point = carla.Transform(carla.Location(x=56.8,y=-4.0,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
     agent_waypoint = np.array([
-     (carla.Location(x=130.0, y=55.5,  z=0.3)), #첫번째 교차로 전 
-     (carla.Location(x=88.4,  y=88.3,  z=0.3)), #좌회전 후 
-     (carla.Location(x=230.0, y=133.5, z=0.3)), #좌회전 후 
-     (carla.Location(x=338.8, y=88.3,  z=0.3)), #긴 직진 후 좌회전
-     (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
-     (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
+     (carla.Location(x=4.3, y=-50.0,  z=0.0)), #첫번째 교차로 전 
+     (carla.Location(x=5.7,  y=-186.8,  z=0.0)), #좌회전 후 
+    #  (carla.Location(x=7.4, y=-178.0, z=0.0)), #좌회전 후 
+    #  (carla.Location(x=338.8, y=88.3,  z=0.0)), #긴 직진 후 좌회전
+    #  (carla.Location(x=300.0, y=55.5,  z=0.0)), #마지막 좌회전 후
+    #  (carla.Location(x=120.0, y=55.5,  z=0.0))  #최종 목적지
      ])
-    # agent_start_point = carla.Transform(carla.Location(x=120.0, y=55.5,  z=0.3), carla.Rotation(pitch = 0, yaw=180, roll=0))
-    # agent_waypoint = np.array([
-    #  (carla.Location(x=88.4,  y=88.3,  z=0.3)), #좌회전 후 
-    #  (carla.Location(x=230.0, y=133.5, z=0.3)), #좌회전 후 
-    #  (carla.Location(x=338.8, y=88.3,  z=0.3)), #긴 직진 후 좌회전
-    #  (carla.Location(x=300.0, y=55.5,  z=0.3)), #마지막 좌회전 후
-    #  (carla.Location(x=120.0, y=55.5,  z=0.3))  #최종 목적지
-    #  ])
-    #firetruck 1
-    v1_start_point = carla.Transform(carla.Location(x=211.5,y=129.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    # firetruck 1
+    v1_start_point = carla.Transform(carla.Location(x=-4.9, y=-121.3,  z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v1_waypoint = np.array([
-     (carla.Location(x=111.0, y=129.5, z=0.3)),
-     (carla.Location(x=92.3, y=120.8, z=2))
+     (carla.Location(x=-5.9, y=-65.4, z=0.0)),
      ])
-    #ambulance 1
-    v2_start_point = carla.Transform(carla.Location(x=334.8,y=40.5,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+    # #ambulance 1
+    v2_start_point = carla.Transform(carla.Location(x=-2.1,y=-84.4,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v2_waypoint = np.array([
-    (carla.Location(x=311.5, y=129.5,  z=0.3)),
-    # (carla.Location(x=111.0, y=129.5,  z=0.3))
+    (carla.Location(x=-3.2, y=-40.9,  z=0.0))
      ])
     #cybertruck 1
-    v3_start_point = carla.Transform(carla.Location(x=92.3,y=120.8,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    v3_start_point = carla.Transform(carla.Location(x=-0.2,y=-151.4,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v3_waypoint = np.array([
-    (carla.Location(x=190.0, y=59.5,  z=0.3))
+    (carla.Location(x=-3.2, y=-40.9,  z=0.0))
      ])
     #sprinter 1
-    v4_start_point = carla.Transform(carla.Location(x=150.0,y=59.5,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
+    v4_start_point = carla.Transform(carla.Location(x=19.9,y=12.0,z=2), carla.Rotation(pitch = 0, yaw=-40, roll=0))
     v4_waypoint = np.array([
-    (carla.Location(x=158.0, y=28.0,  z=0.3))
+    (carla.Location(x=32.0, y=3.7,  z=0.0))
      ])
-    #firetruck 2
-    v5_start_point = carla.Transform(carla.Location(x=334.8,y=80.5,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+    # start front fire
+    v5_start_point = carla.Transform(carla.Location(x=15.8,y=11.4,z=2), carla.Rotation(pitch = 0, yaw=-50, roll=0))
     v5_waypoint = np.array([
-    # carla.Location(x=300.0,y=129.5,z=2),
-    (carla.Location(x=311.5, y=129.5,  z=0.3)),
+    (carla.Location(x=10.9,  y=-182.5,  z=0.0)),
+    (carla.Location(x=39.4,  y=-196.6,  z=0.0)),
      ])
-    #firetruck 3
-    v6_start_point = carla.Transform(carla.Location(x=334.8,y=60.5,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
+    #start right fire
+    v6_start_point = carla.Transform(carla.Location(x=64.3,y=-7.3,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
     v6_waypoint = np.array([
-    # carla.Location(x=300.0,y=129.5,z=2),
-    (carla.Location(x=311.5, y=129.5,  z=0.3)),
+    (carla.Location(x=9.5, y=-123.7, z=0.0)),
+    # (carla.Location(x=11.2, y=-179.2, z=0.0)),
+    (carla.Location(x=65.9, y=-133.3, z=7.6)),
      ])
-    #firetruck 4
-    v7_start_point = carla.Transform(carla.Location(x=154,y=40,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+    # start left fire1
+    v7_start_point = carla.Transform(carla.Location(x=40.2, y=7.1,  z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
     v7_waypoint = np.array([
-    (carla.Location(x=130.0, y=55.5,  z=0.3)),
-    (carla.Location(x=92.3, y=35.5,  z=0.3))
+    (carla.Location(x=62.3, y=7.7,  z=0.0)),
      ])
-    #firetruck 5
-    v8_start_point = carla.Transform(carla.Location(x=160.0,y=129.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    # start front cybertruck
+    v8_start_point = carla.Transform(carla.Location(x=5.9,y=19.1,z=2), carla.Rotation(pitch = 0, yaw=-20, roll=0))
     v8_waypoint = np.array([
-    (carla.Location(x=150.0, y=59.5,  z=0.3)),
+    (carla.Location(x=85.1, y=3.7,  z=0.0)),
      ])
-    #ambulance 3rd
-    v9_start_point = carla.Transform(carla.Location(x=230.5,y=129.5,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
+    # #ambulance 3rd
+    v9_start_point = carla.Transform(carla.Location(x=0.5,y=-183.2,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v9_waypoint = np.array([
-    (carla.Location(x=111.0, y=129.5,  z=0.3)),
-    (carla.Location(x=92.3, y=120.8, z=2))
+    (carla.Location(x=-3.2, y=-40.9,  z=0.0))
+    # (carla.Location(x=92.3, y=120.8, z=2))
      ])
     #carlacola
-    v10_start_point = carla.Transform(carla.Location(x=92.3,y=110.0,z=2), carla.Rotation(pitch = 0, yaw=-90, roll=0))
+    v10_start_point = carla.Transform(carla.Location(x=-2.9,y=-183.1,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
     v10_waypoint = np.array([
-    (carla.Location(x=150.0, y=59.5,  z=0.3))
+    (carla.Location(x=-5.9, y=-65.4, z=0.0)),
      ])
+    # v11_start_point = carla.Transform(carla.Location(x=-89.7,y=-136.8,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
+    # v11_waypoint = np.array([
+    # (carla.Location(x=-49.8, y=-135.8, z=0.0)),
+    #  ])
+    # v12_start_point = carla.Transform(carla.Location(x=-90.7,y=-133.5,z=2), carla.Rotation(pitch = 0, yaw=0, roll=0))
+    # v12_waypoint = np.array([
+    # (carla.Location(x=-48.7, y=-132.4, z=0.0)),
+    #  ])
     v_start_point.append(v1_start_point)
     v_waypoint.append(v1_waypoint)
     v_start_point.append(v2_start_point)
@@ -170,6 +168,10 @@ if global_map_id==1:
     v_waypoint.append(v9_waypoint)
     v_start_point.append(v10_start_point)
     v_waypoint.append(v10_waypoint)
+    # v_start_point.append(v11_start_point)
+    # v_waypoint.append(v11_waypoint)
+    # v_start_point.append(v12_start_point)
+    # v_waypoint.append(v12_waypoint)
 
     
     w1_start_point = carla.Transform(carla.Location(x=110.0,y=61.0,z=2), carla.Rotation(pitch = 0, yaw=-180, roll=0))
@@ -247,6 +249,8 @@ class World(object):
         self.npc_v8 = None
         self.npc_v9 = None
         self.npc_v10 = None
+        # self.npc_v11 = None
+        # self.npc_v12 = None
         self.npc_v = []
         
         self.npc_w1 = None
@@ -430,12 +434,17 @@ class World(object):
         self.npc_v7 = self.spawn_vehicle('firetruck',   self.npc_v7, v7_start_point)
         self.npc_v.append(self.npc_v7)
 
-        self.npc_v8 = self.spawn_vehicle('firetruck',   self.npc_v8, v8_start_point)
+        self.npc_v8 = self.spawn_vehicle('sprinter',   self.npc_v8, v8_start_point)
         self.npc_v.append(self.npc_v8)
         self.npc_v9 = self.spawn_vehicle('ambulance',   self.npc_v9, v9_start_point)
         self.npc_v.append(self.npc_v9)
         self.npc_v10 = self.spawn_vehicle('carlacola',   self.npc_v10, v10_start_point)
         self.npc_v.append(self.npc_v10)
+        # self.npc_v11 = self.spawn_vehicle('carlacola',   self.npc_v11, v11_start_point)
+        # self.npc_v.append(self.npc_v11)
+        # self.npc_v12 = self.spawn_vehicle('carlacola',   self.npc_v12, v12_start_point)
+        # self.npc_v.append(self.npc_v12)
+
 
         # print(len(self.npc_v))
         
@@ -516,6 +525,8 @@ class World(object):
             self.npc_v8,
             self.npc_v9,
             self.npc_v10,
+            # self.npc_v11,
+            # self.npc_v12,
             # self.npc_v,
             # self.v_agent,
             # self.v_control
@@ -609,7 +620,7 @@ class HUD(object):
             '',
             'Speed:   % 15.0f km/h' % (3.6 * math.sqrt(vel.x**2 + vel.y**2 + vel.z**2)),
             u'Heading:% 16.0f\N{DEGREE SIGN} % 2s' % (transform.rotation.yaw, heading),
-            'Location:% 20s' % ('(% 5.1f, % 5.1f)' % (transform.location.x, transform.location.y)),
+            'Location:% 20s' % ('(% 5.1f, % 5.1f, % 5.1f)' % (transform.location.x, transform.location.y, transform.location.z)),
             'GNSS:% 24s' % ('(% 2.6f, % 3.6f)' % (world.gnss_sensor.lat, world.gnss_sensor.lon)),
             'Height:  % 18.0f m' % transform.location.z,
             '']
@@ -1022,10 +1033,12 @@ def game_loop(args):
         client.set_timeout(4.0)
         
         traffic_manager = client.get_trafficmanager()
+
         # sim_world = client.get_world()
         # sim_world = client.load_world("Town01")
-        sim_world = client.load_world('Town01_Opt', carla.MapLayer.Buildings | carla.MapLayer.ParkedVehicles | carla.MapLayer.StreetLights)
+        sim_world = client.load_world('Town03_Opt', carla.MapLayer.Buildings | carla.MapLayer.ParkedVehicles | carla.MapLayer.StreetLights)
         sim_world.unload_map_layer(carla.MapLayer.StreetLights)
+        sim_world.unload_map_layer(carla.MapLayer.Foliage)
         
         if args.sync:
             settings = sim_world.get_settings()
@@ -1125,10 +1138,10 @@ def game_loop(args):
         v6_agent = BehaviorAgent(world.npc_v6, behavior=args.behavior)
         v6_agent.set_destination(v6_waypoint[0])
 
-        v7_agent = BehaviorAgent(world.npc_v7, "aggressive")
+        v7_agent = BehaviorAgent(world.npc_v7, behavior=args.behavior)
         v7_agent.set_destination(v7_waypoint[0])
 
-        v8_agent = BehaviorAgent(world.npc_v8, "aggressive")
+        v8_agent = BehaviorAgent(world.npc_v8, behavior=args.behavior)
         v8_agent.set_destination(v8_waypoint[0])
         
         v9_agent = BehaviorAgent(world.npc_v9, "aggressive")
@@ -1136,6 +1149,12 @@ def game_loop(args):
 
         v10_agent = BehaviorAgent(world.npc_v10, behavior=args.behavior)
         v10_agent.set_destination(v10_waypoint[0])
+
+        # v11_agent = BehaviorAgent(world.npc_v11, "aggressive")
+        # v11_agent.set_destination(v11_waypoint[0])
+
+        # v12_agent = BehaviorAgent(world.npc_v12, "aggressive")
+        # v12_agent.set_destination(v12_waypoint[0])
         
         for i in range(0,len(world.npc_v)):
             v_agent_temp = BehaviorAgent(world.npc_v[i], behavior=args.behavior)
@@ -1179,6 +1198,8 @@ def game_loop(args):
         for i in range(0, len(world.v_agent)):
             print('<V%d_agent> 1th destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                 %(i+1, v_waypoint[i][cnt_v_waypoint[i]].x, v_waypoint[i][cnt_v_waypoint[i]].y, v_waypoint[i][cnt_v_waypoint[i]].z) )
+
+        
         
         while (frame_current < nbr_frame):
             clock.tick()
@@ -1213,70 +1234,16 @@ def game_loop(args):
                         print('<V%d_agent> %dth destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                                 %(i+1, cnt_waypoint+1, v_waypoint[i][cnt_v_waypoint[i]].x, v_waypoint[i][cnt_v_waypoint[i]].y, v_waypoint[i][cnt_v_waypoint[i]].z) )
 
-            # if v1_agent.done():
-            #     cnt_waypoint_v1 += 1
-            #     if cnt_waypoint_v1 > len(v1_waypoint)-1:
-            #         v1_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v1_waypoint[cnt_waypoint_v1])
-            #         print('v1_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v1_waypoint[cnt_waypoint_v1].x, v1_waypoint[cnt_waypoint_v1].y, v1_waypoint[cnt_waypoint_v1].z) )
-            
-            # if v2_agent.done():
-            #     cnt_waypoint_v2 += 1
-            #     if cnt_waypoint_v2 > len(v2_waypoint)-1:
-            #         v2_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v2_waypoint[cnt_waypoint_v2])
-            #         print('v2_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v2_waypoint[cnt_waypoint_v2].x, v2_waypoint[cnt_waypoint_v2].y, v2_waypoint[cnt_waypoint_v2].z) )
-                    
-            # if v3_agent.done():
-            #     cnt_waypoint_v3 += 1
-            #     if cnt_waypoint_v3 > len(v3_waypoint)-1:
-            #         v3_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v3_waypoint[cnt_waypoint_v3])
-            #         print('v3_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v3_waypoint[cnt_waypoint_v3].x, v3_waypoint[cnt_waypoint_v3].y, v3_waypoint[cnt_waypoint_v3].z) )
-                    
-            # if v4_agent.done():
-            #     cnt_waypoint_v4 += 1
-            #     if cnt_waypoint_v4 > len(v4_waypoint)-1:
-            #         v4_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v4_waypoint[cnt_waypoint_v4])
-            #         print('v4_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v4_waypoint[cnt_waypoint_v4].x, v4_waypoint[cnt_waypoint_v4].y, v4_waypoint[cnt_waypoint_v4].z) )
-
-            # if v7_agent.done():
-            #     cnt_waypoint_v7 += 1
-            #     if cnt_waypoint_v7 > len(v7_waypoint)-1:
-            #         v7_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v7_waypoint[cnt_waypoint_v7])
-            #         print('v7_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v7_waypoint[cnt_waypoint_v7].x, v7_waypoint[cnt_waypoint_v7].y, v7_waypoint[cnt_waypoint_v7].z) ) 
-
-            # if v9_agent.done():
-            #     cnt_waypoint_v9 += 1
-            #     if cnt_waypoint_v9 > len(v9_waypoint)-1:
-            #         v9_agent.set_destination(random.choice(v_spawn_points).location)
-            #     else:
-            #         agent.set_destination(v9_waypoint[cnt_waypoint_v9])
-            #         print('v9_agent new destination: Location(x=%.1f, y=%.1f, z=%.1f)'
-            #                 %(v9_waypoint[cnt_waypoint_v9].x, v9_waypoint[cnt_waypoint_v9].y, v9_waypoint[cnt_waypoint_v9].z) ) 
-
             if agent.done():
+                # agent.set_destination(random.choice(v_spawn_points).location)
                 cnt_waypoint += 1
                 if cnt_waypoint > len(agent_waypoint)-1:
-                    break
+                    # break
+                    agent.set_destination(random.choice(v_spawn_points).location)
                 agent.set_destination(agent_waypoint[cnt_waypoint])
                 print('<Player>   %dth destination: Location(x=%.1f, y=%.1f, z=%.1f)'
                     %(cnt_waypoint+1, agent_waypoint[cnt_waypoint].x, agent_waypoint[cnt_waypoint].y, agent_waypoint[cnt_waypoint].z) )
                 
-               
-            
             if agent.done():
                 if args.loop:
                     world.hud.notification("The target has been reached, searching for another target", seconds=4.0)
@@ -1293,22 +1260,6 @@ def game_loop(args):
                 world.v_control.insert(i, world.v_agent[i].run_step())
                 world.v_control[i].manual_gear_shift = False
                 world.npc_v[i].apply_control(world.v_control[i])
-            
-            # v1_control = v1_agent.run_step()
-            # v1_control.manual_gear_shift = False
-            # world.npc_v1.apply_control(v1_control)
-            
-            # v2_control = v2_agent.run_step()
-            # v2_control.manual_gear_shift = False
-            # world.npc_v2.apply_control(v2_control)
-            
-            # v3_control = v3_agent.run_step()
-            # v3_control.manual_gear_shift = False
-            # world.npc_v3.apply_control(v3_control)
-            
-            # v4_control = v4_agent.run_step()
-            # v4_control.manual_gear_shift = False
-            # world.npc_v4.apply_control(v4_control)
         
         VelodyneHDL64.save_poses()
         client.stop_recorder()

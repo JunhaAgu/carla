@@ -275,7 +275,10 @@ class World(object):
                 sys.exit(1)
             spawn_points = self.map.get_spawn_points()
             # spawn_point = random.choice(spawn_points) if spawn_points else carla.Transform()
-            spawn_point = carla.Transform(carla.Location(x=154,y=40,z=2), carla.Rotation(pitch = 0, yaw=90, roll=0))
+            # Town01
+            # spawn_point = carla.Transform((carla.Location(x=92.3, y=120.8, z=2)), carla.Rotation(pitch = 0, yaw=180, roll=0))
+            # Town02
+            spawn_point = carla.Transform(carla.Location(x=64.3,y=-7.3,z=2), carla.Rotation(pitch = 0, yaw=180, roll=0))
             self.player = self.world.try_spawn_actor(blueprint, spawn_point)
             self.show_vehicle_telemetry = False
             self.modify_vehicle_physics(self.player)
@@ -676,7 +679,7 @@ class HUD(object):
             u'Compass:% 17.0f\N{DEGREE SIGN} % 2s' % (compass, heading),
             'Accelero: (%5.1f,%5.1f,%5.1f)' % (world.imu_sensor.accelerometer),
             'Gyroscop: (%5.1f,%5.1f,%5.1f)' % (world.imu_sensor.gyroscope),
-            'Location:% 20s' % ('(% 5.1f, % 5.1f)' % (t.location.x, t.location.y)),
+            'Location:% 20s' % ('(% 5.1f, % 5.1f, % 5.1f)' % (t.location.x, t.location.y, t.location.z)),
             'GNSS:% 24s' % ('(% 2.6f, % 3.6f)' % (world.gnss_sensor.lat, world.gnss_sensor.lon)),
             'Height:  % 18.0f m' % t.location.z,
             '']
