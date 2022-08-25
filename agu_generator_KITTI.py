@@ -18,6 +18,7 @@ import carla
 from carla import VehicleLightState as vls
 
 import agu_ply as ply
+import agu_bin as bin
 import logging
 import queue
 import struct
@@ -172,7 +173,11 @@ class HDL64E(Sensor):
         self.initial_rot = np.identity(3)
         self.calib_output = folder_output
         self.frame_output = folder_output+"/frames"
+        self.bin_output   = folder_output+"/velodyne"
+        self.label_output = folder_output+"/labels"
         os.makedirs(self.frame_output) if not os.path.exists(self.frame_output) else [os.remove(f) for f in glob.glob(self.frame_output+"/*") if os.path.isfile(f)]
+        os.makedirs(self.bin_output) if not os.path.exists(self.bin_output) else [os.remove(f) for f in glob.glob(self.bin_output+"/*") if os.path.isfile(f)]
+        os.makedirs(self.label_output) if not os.path.exists(self.label_output) else [os.remove(f) for f in glob.glob(self.label_output+"/*") if os.path.isfile(f)]
 
         settings = world.get_settings()
         self.packet_per_frame = 1/(self.bp.get_attribute('rotation_frequency').as_float()*settings.fixed_delta_seconds)
@@ -253,6 +258,21 @@ class HDL64E(Sensor):
                     print("Export : "+ply_file_path)
                 else:
                     print('ply.write_ply() failed')
+                
+                bin_file_path = self.bin_output+"/%06d.bin" %self.i_frame
+
+                if bin.write_bin(bin_file_path, [np.float32(pts_all)], ['x','y','z','cos_angle_lidar_surface']):
+                    print("Export : "+bin_file_path)
+                else:
+                    print('bin.write_bin() failed')
+
+                label_file_path = self.label_output+"/%06d.label" %self.i_frame
+
+                if bin.write_label(label_file_path, [np.uint32(semantic_all)], ['instance','semantic']):
+                    print("Export : "+label_file_path)
+                else:
+                    print('bin.write_label() failed')
+                    
                 # if ply.write_ply(ply_file_path, [np.float32(pts_all), np.float32(ts_all)], ['x','y','z','intensity','timestamp']):
                 #     print("Export : "+ply_file_path)
                 # else:
