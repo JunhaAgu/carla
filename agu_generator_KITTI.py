@@ -175,6 +175,7 @@ class HDL64E(Sensor):
         self.frame_output = folder_output+"/frames"
         self.bin_output   = folder_output+"/velodyne"
         self.label_output = folder_output+"/labels"
+        self.time_output = folder_output+"/times"
         os.makedirs(self.frame_output) if not os.path.exists(self.frame_output) else [os.remove(f) for f in glob.glob(self.frame_output+"/*") if os.path.isfile(f)]
         os.makedirs(self.bin_output) if not os.path.exists(self.bin_output) else [os.remove(f) for f in glob.glob(self.bin_output+"/*") if os.path.isfile(f)]
         os.makedirs(self.label_output) if not os.path.exists(self.label_output) else [os.remove(f) for f in glob.glob(self.label_output+"/*") if os.path.isfile(f)]
@@ -211,8 +212,8 @@ class HDL64E(Sensor):
         self.initial_rot_transpose = (rotation_carla(self.sensor.get_transform().rotation).dot(self.rotation_lidar)).T
         with open(self.calib_output+"/full_poses_lidar.txt", 'w') as posfile:
             posfile.write("# R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2) timestamp\n")
-        with open(self.calib_output+"/sync_poses_lidar.txt", 'w') as posfile_sync:
-            posfile_sync.write("# R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2) timestamp\n")
+        # with open(self.calib_output+"/sync_poses_lidar.txt", 'w') as posfile_sync:
+        #     posfile_sync.write("# R(0,0) R(0,1) R(0,2) t(0) R(1,0) R(1,1) R(1,2) t(1) R(2,0) R(2,1) R(2,2) t(2) timestamp\n")
 
     def save(self):
         while not self.queue.empty():
@@ -292,11 +293,20 @@ class HDL64E(Sensor):
                 posfile.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+" ")
                 posfile.write(str(ts)+"\n")
         
+            # if self.flag_pts_pose_sync == True:
+            #     with open(self.calib_output+"/sync_poses_lidar.txt", 'a') as posfile_sync:
+            #         posfile_sync.write(" ".join(map(str,[r for r in R_W[0]]))+" "+str(T_W[0])+" ")
+            #         posfile_sync.write(" ".join(map(str,[r for r in R_W[1]]))+" "+str(T_W[1])+" ")
+            #         posfile_sync.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+" ")
+            #         posfile_sync.write(str(ts)+"\n")
+            #     self.flag_pts_pose_sync = False
             if self.flag_pts_pose_sync == True:
-                with open(self.calib_output+"/sync_poses_lidar.txt", 'a') as posfile_sync:
+                with open(self.calib_output+"/poses.txt", 'a') as posfile_sync:
                     posfile_sync.write(" ".join(map(str,[r for r in R_W[0]]))+" "+str(T_W[0])+" ")
                     posfile_sync.write(" ".join(map(str,[r for r in R_W[1]]))+" "+str(T_W[1])+" ")
-                    posfile_sync.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+" ")
+                    posfile_sync.write(" ".join(map(str,[r for r in R_W[2]]))+" "+str(T_W[2])+"\n")
+                with open(self.calib_output+"/times.txt", 'a') as posfile_sync:
+                    # ts_round6 = format(ts, ".6f")
                     posfile_sync.write(str(ts)+"\n")
                 self.flag_pts_pose_sync = False
 
